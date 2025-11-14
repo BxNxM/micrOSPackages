@@ -1,6 +1,6 @@
-# ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png)micrOSPackages v0.1
+# ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png)micrOS Packages 📦 v0.1
 
-This repository contains multiple **micrOS installable packages**, each in its own folder.  
+This repository contains multiple **micrOS installable packages and applications**, each in its own folder.  
 Every package includes a `package.json` for `mip` so micrOS devices can install them from GitHub (NOT YET: or a local server.)
 
 ```
