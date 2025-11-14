@@ -1,0 +1,9 @@
+{
+  "version": "0.1.0",
+  "urls": [
+    ["lib/template_app/__init__.py", "app/__init__.py"],
+    ["lib/template_app/shared.py", "app/shared.py"],
+    ["modules/LM_app.py", "app/LM_app.py"]
+  ]
+}
+
