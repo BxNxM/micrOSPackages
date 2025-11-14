@@ -5,6 +5,9 @@ import sys
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
+# Adjust if you rename GitHub user or repo
+GITHUB_BASE = "github:BxNxM/micrOSPackages/"
+
 
 def find_all_packages(root):
     """Find subdirectories containing a package.json."""
@@ -17,14 +20,61 @@ def find_all_packages(root):
     return sorted(packages)
 
 
+def is_http_remote(src: str) -> bool:
+    if not isinstance(src, str):
+        return False
+    return src.startswith("http://") or src.startswith("https://")
+
+
+def resolve_repo_local_github_path(src: str, pkg_name: str, pkg_path: str):
+    """
+    Try to resolve a github:BxNxM/micrOSPackages/... path to a local file.
+
+    Examples:
+      src = github:BxNxM/micrOSPackages/micros-app-template/template_app/__init__.py
+
+    We try:
+      1) ROOT / (rest after GITHUB_BASE)
+         -> ROOT/micros-app-template/template_app/__init__.py
+      2) If that doesn't exist and first path segment == pkg_name:
+         pkg_path / (rest after '<pkg_name>/')
+         -> <pkg_path>/template_app/__init__.py
+    """
+    if not isinstance(src, str) or not src.startswith(GITHUB_BASE):
+        return None
+
+    rel = src[len(GITHUB_BASE):]  # micros-app-template/template_app/__init__.py
+    # First attempt: relative to repo root
+    candidate_root = os.path.join(ROOT, rel)
+    if os.path.exists(candidate_root):
+        return candidate_root
+
+    # Second attempt: strip leading "<pkg_name>/" and resolve inside pkg_path
+    parts = rel.split("/", 1)
+    if len(parts) == 2 and parts[0] == pkg_name:
+        candidate_pkg = os.path.join(pkg_path, parts[1])
+        if os.path.exists(candidate_pkg):
+            return candidate_pkg
+
+    # If neither exists, still return the ROOT-based candidate for debug
+    return candidate_root
+
+
+def validate_dest_path(dest: str) -> bool:
+    """Basic sanity check for destination path (no '..')."""
+    if not isinstance(dest, str):
+        return False
+    if ".." in dest.split("/"):
+        return False
+    return True
+
+
 def validate_package(pkg_path):
     pkg_json = os.path.join(pkg_path, "package.json")
     pkg_name = os.path.basename(pkg_path)
 
-    # Header
-    print(f"\n📦 **{pkg_name}**")
+    print(f"\n📦 {pkg_name}")
 
-    # Load package.json
     try:
         with open(pkg_json, "r") as f:
             data = json.load(f)
@@ -39,20 +89,43 @@ def validate_package(pkg_path):
 
     all_ok = True
 
-    for dest, src in urls:
-        src_path = os.path.join(pkg_path, src)
-        exists = os.path.exists(src_path)
-
-        if exists:
-            status = "✅"
-        else:
-            status = "❌"
+    for entry in urls:
+        if not isinstance(entry, (list, tuple)) or len(entry) != 2:
+            print(f"  ❌ Invalid urls entry (expected [dest, src]): {entry}")
             all_ok = False
+            continue
 
-        # Compact colorful line: STATUS source → target
-        print(f"  {status} {src}  ➜  {dest}")
+        dest, src = entry
 
-    # Summary line
+        if not validate_dest_path(dest):
+            print(f"  ❌ {src}  ➜  {dest}   (invalid dest path: contains '..')")
+            all_ok = False
+            continue
+
+        # 1) Our own repo's github: paths
+        repo_local_path = resolve_repo_local_github_path(src, pkg_name, pkg_path)
+        if isinstance(src, str) and src.startswith(GITHUB_BASE):
+            exists = os.path.exists(repo_local_path)
+            status = "✅" if exists else "❌"
+            if not exists:
+                all_ok = False
+            rel_local = os.path.relpath(repo_local_path, ROOT)
+            print(f"  {status} {src}  ➜  {dest}   (local: {rel_local})")
+            continue
+
+        # 2) Plain local paths (relative to package folder)
+        if not is_http_remote(src) and not (isinstance(src, str) and src.startswith("github:")):
+            src_path = os.path.join(pkg_path, src)
+            exists = os.path.exists(src_path)
+            status = "✅" if exists else "❌"
+            if not exists:
+                all_ok = False
+            print(f"  {status} {src}  ➜  {dest}")
+            continue
+
+        # 3) Other remotes: different GitHub repo or http(s)
+        print(f"  🌐 {src}  ➜  {dest}   (remote, not checked)")
+
     if all_ok:
         print("  ✔️ VALID\n")
     else:
@@ -85,4 +158,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
