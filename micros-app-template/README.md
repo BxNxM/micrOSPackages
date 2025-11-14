@@ -1,5 +1,16 @@
 # micrOS Application Package Template
 
+```bash
+├── micros-app-template
+│   ├── README.md
+│   ├── app
+│   │   ├── LM_app.py
+│   │   ├── __init__.py
+│   │   └── shared.py
+│   └── package.json
+```
+
+
 This folder provides a minimal, clean template for building **micrOS application packages**.  
 It is designed to be **copied, renamed, and customized** to create your own micrOS-compatible applications while following the required project structure.
 
@@ -17,6 +28,37 @@ This template is intentionally lightweight and easy to adapt.
 
 ---
 
+## How to use package download
+
+```
+pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/micros-app-template"
+```
+
+Output:
+
+```
+[mip] Installing: https://raw.githubusercontent.com/BxNxM/micrOSPackages/main/micros-app-template {'target': '/lib'}
+  ✓ Installed successfully under /lib
+  ✓ Unpack LM_app.py
+```
+
+### Test app
+
+```
+TinyDevBoard $ app help
+ load,
+ do,
+
+TinyDevBoard $ app load
+Load template_app module
+
+TinyDevBoard $ app do
+Test execution... with Template Shared function access
+```
+
+---
+---
+
 ## 🚀 How to Create Your Own Application
 
 1. **Copy this template folder**  
@@ -25,14 +67,14 @@ This template is intentionally lightweight and easy to adapt.
 2. **Rename the application folder**  
    Example:  
    ```
-   template_app → my_cool_app
+   app → my_cool_app
    ```
 
 3. **Update `package.json`**  
-   - Replace all `template_app/...` paths with `my_cool_app/...`
-   - Update the load module destination to:
+   - Replace all `app/...` paths with `my_cool_app/...`
+   - Create micrOS public handlers:
      ```
-     modules/LM_my_cool_app.py
+     LM_my_cool_app.py
      ```
    - Ensure your version number is correct.
 
@@ -40,7 +82,7 @@ This template is intentionally lightweight and easy to adapt.
    - Add your logic to `my_cool_app/shared.py`
    - Modify `my_cool_app/LM_app.py` to implement your app’s behavior
 
-5. **Install your app on a micrOS device** 
+5. **Native way - Install your app on a micrOS device** 
 
    ```python
    import mip
