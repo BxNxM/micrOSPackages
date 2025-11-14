@@ -11,7 +11,7 @@ def load():
 
 
 def do():
-    print("Test execution...")
+    return f"Test execution... with {shared()}"
 
 
 def help():
