@@ -1,0 +1,9 @@
+{
+  "version": "0.0.1",
+  "urls": [
+    ["LM_app.py", "github:BxNxM/micrOSPackages/..."],
+    ["package/__init__.py", "github:BxNxM/micrOSPackages/..."],
+    ["package/shared.py", "github:BxNxM/micrOSPackages/..."]
+  ],
+  "deps": []
+}

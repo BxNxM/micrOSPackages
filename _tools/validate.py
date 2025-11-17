@@ -9,14 +9,32 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 GITHUB_BASE = "github:BxNxM/micrOSPackages/"
 
 
+def _check_package_json(path):
+    """Check if a package"""
+    pkg_file = os.path.join(path, "package.json")
+    if os.path.isfile(pkg_file):
+        return True
+    return False
+
+
 def find_all_packages(root):
     """Find subdirectories containing a package.json."""
     packages = []
-    for entry in os.listdir(root):
-        full = os.path.join(root, entry)
-        pkg_file = os.path.join(full, "package.json")
-        if os.path.isdir(full) and os.path.isfile(pkg_file):
+
+    parent = os.path.dirname(root)
+    current_dir_name = os.path.basename(root)
+
+    # List directories in the parent dir, excluding the current dir
+    root_folders = [
+        f for f in os.listdir(parent)
+        if f != current_dir_name and os.path.isdir(os.path.join(parent, f))
+    ]
+
+    for entry in root_folders:
+        full = os.path.join(parent, entry)  # use parent, not root
+        if _check_package_json(full):
             packages.append(full)
+
     return sorted(packages)
 
 
@@ -134,8 +152,14 @@ def validate_package(pkg_path):
     return all_ok
 
 
-def main():
-    packages = find_all_packages(ROOT)
+def main(pack_name:str=None):
+    packages:list = []
+    if pack_name is None:
+        packages = find_all_packages(ROOT)
+    else:
+        package = os.path.join(os.path.dirname(ROOT), pack_name)
+        if _check_package_json(pack_name):
+            packages = [package]
 
     if not packages:
         print("⚠️ No packages found (no subfolders containing package.json).")

@@ -3,7 +3,11 @@ import http.server
 import socketserver
 import os
 import socket
-import json
+try:
+    from .validate import find_all_packages
+except ImportError as e:
+    print(f"Import error: {e}")
+    from validate import find_all_packages
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_PORT = 8000
@@ -23,19 +27,8 @@ def get_local_ip():
     return ip
 
 
-def find_packages(root):
-    """Find subdirectories containing a package.json."""
-    packages = []
-    for entry in os.listdir(root):
-        full = os.path.join(root, entry)
-        pkg_file = os.path.join(full, "package.json")
-        if os.path.isdir(full) and os.path.isfile(pkg_file):
-            packages.append(entry)
-    return sorted(packages)
-
-
 def print_instructions(ip, port):
-    packages = find_packages(ROOT)
+    packages = find_all_packages(ROOT)
 
     print("📦 Available mip packages in repo root:\n")
     if not packages:
