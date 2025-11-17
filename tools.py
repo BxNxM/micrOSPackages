@@ -20,19 +20,25 @@ def build_parser():
     parser.add_argument(
         "-s", "--serve",
         action="store_true",
-        help="🌐 Start the mip server"
+        help="🌐 Start the mip server (TODO)"
     )
 
     # CREATE: enabling creation mode
     parser.add_argument(
         "-c", "--create",
         action="store_true",
-        help="📦 Create micrOS application package (requires additional create parameters)."
+        help="📦 Create micrOS application package"
+    )
+
+    # UPDATE: package.json urls
+    parser.add_argument(
+        "-u", "--update",
+        help="✅ Update application package.json by its package name"
     )
 
     # Additional params for CREATE
-    parser.add_argument("--name", help="[Package] Name of the application")
-    parser.add_argument("--command", help="[LM] Command to run the application")
+    parser.add_argument("--package", help="[Package] Name of the package/application")
+    parser.add_argument("--module", help="[LM] Public command name")
 
     return parser
 
@@ -55,15 +61,22 @@ if __name__ == "__main__":
         print("Starting server...")
         serve_packages.main()
 
+    # --- UPDATE LOGIC ---
+    if args.update is not None:
+        package_name = args.update
+        package_path = create_package.REPO_ROOT / package_name / "package"
+        print(f"Updating package.json for {package_name}")
+        create_package.update_package_json(package_path, package_name)
+
     # --- CREATE LOGIC ---
     if args.create:
         print("Creating micrOS Application Package...")
-        if args.name is None:
-            args.name = input("Project name? ")
-        if args.command is None:
-            args.command = input("Command name? ")
-        print(f"  name:    {args.name}")
-        print(f"  command: {args.command}")
-        create_package.create_package(name=args.name, command=args.command)
+        if args.package is None:
+            args.package = input("Package name: ")
+        if args.module is None:
+            args.module = input("Command (load module) name: ")
+        print(f"  package name: {args.package}")
+        print(f"  command: {args.module}")
+        create_package.create_package(package=args.package, module=args.module)
         print(f"Shell example, download: pacman download ...")
-        print(f"Shell example, execution:\n\t{args.command} load\n\t{args.command} do")
+        print(f"Shell example, execution:\n\t{args.module} load\n\t{args.module} do")

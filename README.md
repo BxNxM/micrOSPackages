@@ -1,23 +1,70 @@
 # ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png)micrOS Packages 📦 v0.1
 
-This repository contains multiple **micrOS installable packages and applications**, each in its own folder.  
-Every package includes a `package.json` for `mip` so micrOS devices can install them from GitHub (NOT YET: or a local server.)
 
-```
-micrOSPackages/
-├── package_one/
-│   └── package.json
-├── package_two/
-│   └── package.json
-├── serve_packages.py
-└── validate.py
-```
+# micrOS Packages — Toolkit & Repository
+Version 0.1
+
+This repository contains multiple installable micrOS packages and applications.  
+Each package lives in its own folder and includes a package.json that is compatible with mip.  
+micrOS devices can install these packages from GitHub or (later) from a local mip server.
 
 ---
 
-## 📦 Package Structure
+# CLI Tool (tools.py)
 
-```
+The tools.py script provides a unified interface to validate packages, create new packages, update package.json files, and start a local mip server.
+
+## Usage
+
+
+## Options
+
+### General
+- `-h`, `--help`
+  Show help message and exit.
+
+### Validation
+- `-v [VALIDATE]`, `--validate [VALIDATE]`  
+  Validate one package by name.  
+  If no name is provided, validate all packages.
+
+### Local mip Server
+- `-s`, `--serve`  
+  Start the local mip server (work in progress / TODO).
+
+### Package Creation
+- `-c`, `--create`  
+  Create a new micrOS application package from the template.
+
+### Update package.json (New Feature)
+- `-u UPDATE`, `--update UPDATE`  
+  Update the package.json file of a package by its package name.  
+  Primarily updates the "urls" section.
+
+### Additional Metadata Flags
+- `--package PACKAGE`  
+  Name of the package/application when creating a new one.
+- `--module MODULE`  
+  Public Load Module name (LM_*.py) when creating a new application.
+
+---
+
+# Repository Structure
+
+```bash
+├── README.md
+├── _tools
+│   ├── __init__.py
+│   ├── app_template
+│   │   ├── README.md
+│   │   ├── package
+│   │   │   ├── LM_app.py
+│   │   │   ├── __init__.py
+│   │   │   └── shared.py
+│   │   └── package.json
+│   ├── create_package.py
+│   ├── serve_packages.py
+│   └── validate.py
 ├── micros-app-template
 │   ├── README.md
 │   ├── app
@@ -25,10 +72,12 @@ micrOSPackages/
 │   │   ├── __init__.py
 │   │   └── shared.py
 │   └── package.json
+└── tools.py
 ```
 
-**Important:**  
-micrOS only auto-loads modules if they follow this naming convention:
+### Load Module Naming Convention
+
+micrOS automatically loads modules only if their filenames match:
 
 ```
 LM_*.py
@@ -36,19 +85,76 @@ LM_*.py
 
 ---
 
-## 🚀 Installing on micrOS Device
+# Validating Packages
 
-### From GitHub:
+Validate all packages:
+
+```bash
+python3 tools.py --validate
+```
+
+Validate one specific package:
+
+```bash
+python3 tools.py --validate mypackage
+```
+
+The validation process ensures:
+- package.json exists
+- all files listed inside package.json actually exist
+- the package structure is valid for mip installation
+
+---
+
+# Updating package.json (New Feature)
+
+Update the urls section of a package’s package.json:
+
+```bash
+python3 tools.py --update mypackage
+```
 
 
-#### REPL
+This reads, modifies, and rewrites the package.json file cleanly.
+
+---
+
+# Creating a New micrOS Package
+
+```bash
+python3 tools.py --create --package myapplication --module myapp
+```
+
+
+This command:
+- creates a new folder
+- copies the template structure
+- fills in package.json with provided values
+
+---
+
+# Local mip Test Server (Work In Progress)
+
+Start the local mip server:
+
+```bash
+python3 tools.py --serve
+```
+
+> Under development
+
+---
+
+# Installing Packages on a micrOS Device
+
+## From GitHub (REPL)
 
 ```python
 import mip
 mip.install("github:BxNxM/micrOSPackages/micros-app-template")
 ```
 
-#### Shell
+## From Shell
 
 ```bash
 pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/micros-app-template"
@@ -56,43 +162,18 @@ pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/micros-app-te
 
 ---
 
-## 🔧 Validate Packages Locally
+# Summary
 
-Use the validation script to verify package structure and source file paths:
-
-```bash
-python3 validate.py
-```
-
-This ensures all files listed in every `package.json` exist and are installable.
-
----
-
-## 🌐 Local mip Server (not works yet)
-
-Use the local test server to install packages onto a device without GitHub:
-
-```bash
-python3 serve_packages.py
-```
-
-The script prints ready-to-use mip commands such as:
-
-```python
-import mip
-mip.install("http://<your-ip>:8000/template_app")
-```
-
----
-
-## ✔️ Summary
-
-- Each folder = one micrOS package  
-- `validate.py` checks correctness of package structure
-- `serve_packages.py` provides a local test server  
-- Load modules must be named `LM_*.py` for micrOS to auto-load them  
-
-This [micros-app-template](https://github.com/BxNxM/micrOSPackages/tree/main/micros-app-template) example serves as a clean, minimal template for building reusable micrOS applications.
+- Each folder is one micrOS package.
+- tools.py manages:
+  - validation
+  - package creation
+  - package.json updating
+  - local mip server (WIP)
+- validate.py checks package structure and file references.
+- servei\_packages.py will provide a local mip server.
+- Load Modules must follow the LM_*.py naming pattern.
+- micros-app-template is the recommended template for creating new micrOS application packages.
 
 
 git push -u origin main

@@ -1,5 +1,6 @@
 """
 micrOS Application exposed functions
+  Unpackaging moves this module under /modules/ in the micrOS filesystem.
 """
 
 from package import shared
