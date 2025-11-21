@@ -1,0 +1,22 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "async_oledui/uiframes.py",
+            "github:BxNxM/micrOSPackages/async_oledui/package/uiframes.py"
+        ],
+        [
+            "async_oledui/__init__.py",
+            "github:BxNxM/micrOSPackages/async_oledui/package/__init__.py"
+        ],
+        [
+            "async_oledui/peripheries.py",
+            "github:BxNxM/micrOSPackages/async_oledui/package/peripheries.py"
+        ],
+        [
+            "LM_oledui.py",
+            "github:BxNxM/micrOSPackages/async_oledui/package/LM_oledui.py"
+        ]
+    ],
+    "deps": []
+}
