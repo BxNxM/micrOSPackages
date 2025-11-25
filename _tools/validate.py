@@ -17,21 +17,20 @@ def _check_package_json(path):
     return False
 
 
-def find_all_packages(root):
+def find_all_packages(source_path):
     """Find subdirectories containing a package.json."""
     packages = []
 
-    parent = os.path.dirname(root)
-    current_dir_name = os.path.basename(root)
+    current_dir_name = os.path.basename(ROOT)
 
     # List directories in the parent dir, excluding the current dir
     root_folders = [
-        f for f in os.listdir(parent)
-        if f != current_dir_name and os.path.isdir(os.path.join(parent, f))
+        f for f in os.listdir(source_path)
+        if f != current_dir_name and os.path.isdir(os.path.join(source_path, f))
     ]
 
     for entry in root_folders:
-        full = os.path.join(parent, entry)  # use parent, not root
+        full = os.path.join(source_path, entry)  # use parent, not root
         if _check_package_json(full):
             packages.append(full)
 
@@ -49,19 +48,19 @@ def resolve_repo_local_github_path(src: str, pkg_name: str, pkg_path: str):
     Try to resolve a github:BxNxM/micrOSPackages/... path to a local file.
 
     Examples:
-      src = github:BxNxM/micrOSPackages/micros-app-template/template_app/__init__.py
+      src = github:BxNxM/micrOSPackages/blinky_example/package/__init__.py
 
     We try:
       1) ROOT / (rest after GITHUB_BASE)
-         -> ROOT/micros-app-template/template_app/__init__.py
+         -> ROOT/blinky_example/package/__init__.py
       2) If that doesn't exist and first path segment == pkg_name:
          pkg_path / (rest after '<pkg_name>/')
-         -> <pkg_path>/template_app/__init__.py
+         -> <pkg_path>/package/__init__.py
     """
     if not isinstance(src, str) or not src.startswith(GITHUB_BASE):
         return None
 
-    rel = src[len(GITHUB_BASE):]  # micros-app-template/template_app/__init__.py
+    rel = src[len(GITHUB_BASE):]  # blinky_example/package/__init__.py
     # First attempt: relative to repo root
     candidate_root = os.path.join(ROOT, rel)
     if os.path.exists(candidate_root):
@@ -155,7 +154,7 @@ def validate_package(pkg_path):
 def main(pack_name:str=None):
     packages:list = []
     if pack_name is None:
-        packages = find_all_packages(ROOT)
+        packages = find_all_packages(os.path.dirname(ROOT))
     else:
         package = os.path.join(os.path.dirname(ROOT), pack_name)
         if _check_package_json(pack_name):

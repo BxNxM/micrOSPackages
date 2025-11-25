@@ -1,8 +1,0 @@
-{
-  "version": "0.1.0",
-  "urls": [
-    ["template_app/__init__.py", "github:BxNxM/micrOSPackages/micros-app-template/app/__init__.py"],
-    ["template_app/shared.py", "github:BxNxM/micrOSPackages/micros-app-template/app/shared.py"],
-    ["LM_app.py", "github:BxNxM/micrOSPackages/micros-app-template/app/LM_app.py"]
-  ]
-}

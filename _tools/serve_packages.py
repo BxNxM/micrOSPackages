@@ -28,7 +28,7 @@ def get_local_ip():
 
 
 def print_instructions(ip, port):
-    packages = find_all_packages(ROOT)
+    packages = find_all_packages(os.path.dirname(ROOT))
 
     print("📦 Available mip packages in repo root:\n")
     if not packages:

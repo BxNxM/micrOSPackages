@@ -1,0 +1,14 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "blinky_example/__init__.py",
+            "github:BxNxM/micrOSPackages/blinky_example/package/__init__.py"
+        ],
+        [
+            "LM_blinky.py",
+            "github:BxNxM/micrOSPackages/blinky_example/package/LM_blinky.py"
+        ]
+    ],
+    "deps": []
+}

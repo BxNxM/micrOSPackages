@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from _tools import validate, serve_packages, create_package
+from _tools import validate, serve_packages, create_package, unpack
 
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -29,6 +29,9 @@ def build_parser():
         action="store_true",
         help="📦 Create micrOS application package"
     )
+    # Additional params for CREATE
+    parser.add_argument("--package", help="[Package] Name of the package/application")
+    parser.add_argument("--module", help="[LM] Public command name")
 
     # UPDATE: package.json urls
     parser.add_argument(
@@ -36,9 +39,12 @@ def build_parser():
         help="✅ Update application package.json by its package name"
     )
 
-    # Additional params for CREATE
-    parser.add_argument("--package", help="[Package] Name of the package/application")
-    parser.add_argument("--module", help="[LM] Public command name")
+    # SERVE: simple flag
+    parser.add_argument(
+        "--unpack",
+        action="store_true",
+        help="🌐 Unpack all packages for testing"
+    )
 
     return parser
 
@@ -80,3 +86,7 @@ if __name__ == "__main__":
         create_package.create_package(package=args.package, module=args.module)
         print(f"Shell example, download: pacman download ...")
         print(f"Shell example, execution:\n\t{args.module} load\n\t{args.module} do")
+
+    # --- UNPACK LOGIC (testing) ---
+    if args.unpack:
+        unpack.unpack_all()

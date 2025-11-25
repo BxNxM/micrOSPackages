@@ -65,13 +65,6 @@ The tools.py script provides a unified interface to validate packages, create ne
 │   ├── create_package.py
 │   ├── serve_packages.py
 │   └── validate.py
-├── micros-app-template
-│   ├── README.md
-│   ├── app
-│   │   ├── LM_app.py
-│   │   ├── __init__.py
-│   │   └── shared.py
-│   └── package.json
 └── tools.py
 ```
 
@@ -151,13 +144,13 @@ python3 tools.py --serve
 
 ```python
 import mip
-mip.install("github:BxNxM/micrOSPackages/micros-app-template")
+mip.install("github:BxNxM/micrOSPackages/blinky_example")
 ```
 
 ## From Shell
 
 ```bash
-pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/micros-app-template"
+pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_example"
 ```
 
 ---
@@ -171,10 +164,8 @@ pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/micros-app-te
   - package.json updating
   - local mip server (WIP)
 - validate.py checks package structure and file references.
-- servei\_packages.py will provide a local mip server.
+- serve\_packages.py will provide a local mip server.
 - Load Modules must follow the LM_*.py naming pattern.
-- micros-app-template is the recommended template for creating new micrOS application packages.
-
 
 git push -u origin main
 
