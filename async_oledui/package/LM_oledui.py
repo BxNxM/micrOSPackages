@@ -7,7 +7,7 @@ Designed by Marcell Ban aka BxNxM
 from async_oledui.uiframes import (Frame, Cursor, AppFrame,
                                    HeaderBarFrames, PageBarFrame, PopUpFrame,
                                    ScreenSaver, debugging)
-from async_oledui import peripherals as periph
+from async_oledui import peripheries as periph
 
 from utime import ticks_ms, ticks_diff, sleep_ms
 from Common import syslog, micro_task, manage_task, exec_cmd
