@@ -20,7 +20,7 @@ def build_parser():
     parser.add_argument(
         "-s", "--serve",
         action="store_true",
-        help="🌐 Start the mip server (TODO)"
+        help="🌐 Start a local mip package registry (server)"
     )
 
     # CREATE: enabling creation mode
