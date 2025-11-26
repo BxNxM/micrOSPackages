@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os.path
 import sys
 import json
 from pathlib import Path
@@ -54,17 +55,21 @@ def copy_package_resources(local_packages):
             print(f"Error copying {source_path} to {target_path}: {e}")
 
 
-def post_install(lib_path:Path):
+def post_install(lib_path:Path) -> list:
     """
     micrOS on-device post install simulation
     """
     print("[Unpack] micrOS on device LM unpack (/modules)")
     files = [f for f in lib_path.glob("LM_*.py") if f.is_file()]
+    overwrites = []
     for file in files:
         modules_path = Path(file).parent.parent / "modules"
         file_target_path = modules_path / file.name
+        if os.path.exists(file_target_path):
+            overwrites.append(f"{file_target_path.parent.name}/{file_target_path.name}")
         print(f"Move {file} to {file_target_path}")
         file.rename(file_target_path)
+    return overwrites
 
 
 def unpack_package(package_path:Path, target_path:Path):
@@ -97,7 +102,9 @@ def unpack_package(package_path:Path, target_path:Path):
     version, files, deps = parse_package_json(source_package_json_path)
     local_package_source = resolve_urls_with_local_path(files, target_dir_lib)
     copy_package_resources(local_package_source)
-    post_install(target_dir_lib)
+    overwrites = post_install(target_dir_lib)
+    return overwrites
+
 
 
 def unpack_all(target:Path=None):
@@ -108,8 +115,11 @@ def unpack_all(target:Path=None):
     if target is None:
         target = REPO_ROOT / "unpacked"
     print(f"Unpack all packages from {REPO_ROOT}")
+    all_overwrites = []
     for pkg in find_all_packages(REPO_ROOT):
-        unpack_package(Path(pkg), target)
+        all_overwrites += unpack_package(Path(pkg), target)
+    print(f"[Unpack] Overwritten from packages: {all_overwrites}")
+    return all_overwrites
 
 
 if __name__ == "__main__":
