@@ -1,18 +1,17 @@
 # ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png)micrOS Packages 📦 v0.1
 
 
-# micrOS Packages — Toolkit & Repository
-Version 0.1
+# micrOS Packages Registry and Tools
 
 This repository contains multiple installable micrOS packages and applications.  
 Each package lives in its own folder and includes a package.json that is compatible with mip.  
-micrOS devices can install these packages from GitHub or (later) from a local mip server.
+micrOS devices can install these packages from GitHub or from a local mip server.
 
 ---
 
 # CLI Tool (tools.py)
 
-The tools.py script provides a unified interface to validate packages, create new packages, update package.json files, and start a local mip server.
+The tools.py script provides a unified interface to validate packages, create new packages, update package.json files, and start a local mip package registry server.
 
 ## Usage
 
@@ -30,22 +29,20 @@ The tools.py script provides a unified interface to validate packages, create ne
 
 ### Local mip Server
 - `-s`, `--serve`  
-  Start the local mip server (work in progress / TODO).
+  Start the local mip package registry server.
 
 ### Package Creation
 - `-c`, `--create`  
   Create a new micrOS application package from the template.
-
-### Update package.json (New Feature)
-- `-u UPDATE`, `--update UPDATE`  
-  Update the package.json file of a package by its package name.  
-  Primarily updates the "urls" section.
-
-### Additional Metadata Flags
-- `--package PACKAGE`  
+	- `--package PACKAGE`  
   Name of the package/application when creating a new one.
-- `--module MODULE`  
+	- `--module MODULE`  
   Public Load Module name (LM_*.py) when creating a new application.
+
+### Update package.json
+- `-u UPDATE`, `--update UPDATE`  
+  Update the package.json file of a package by its `PACKAGE` name.  
+  Primarily updates the "urls" section.
 
 ---
 
@@ -99,7 +96,7 @@ The validation process ensures:
 
 ---
 
-# Updating package.json (New Feature)
+# Updating package.json
 
 Update the urls section of a package’s package.json:
 
@@ -126,15 +123,13 @@ This command:
 
 ---
 
-# Local mip Test Server (Work In Progress)
+# Local mip Test Server
 
-Start the local mip server:
+Start the local mip package registry server:
 
 ```bash
 python3 tools.py --serve
 ```
-
-> Under development
 
 ---
 
@@ -162,7 +157,7 @@ pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_exampl
   - validation
   - package creation
   - package.json updating
-  - local mip server (WIP)
+  - local mip server
 - validate.py checks package structure and file references.
 - serve\_packages.py will provide a local mip server.
 - Load Modules must follow the LM_*.py naming pattern.

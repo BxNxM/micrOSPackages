@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os.path
-import sys
 import json
 from pathlib import Path
 import shutil
@@ -11,6 +10,11 @@ try:
 except ImportError:
     print("Import error: validate")
     from validate import find_all_packages, GITHUB_BASE
+try:
+    from .mip import install as mip_install
+except ImportError:
+    print("Import error: mip")
+    from mip import install as mip_install
 
 
 def parse_package_json(package_json_path:Path):
@@ -72,6 +76,15 @@ def post_install(lib_path:Path) -> list:
     return overwrites
 
 
+def download_deps(deps:list, target_path:Path):
+    for dep in deps:
+        ref = dep[0]
+        version = dep[1] if len(dep) > 1 else "latest"
+        print(f"[DEP] Install: {ref} @{version} ({target_path})")
+        # TODO version handling...
+        mip_install(ref, target=target_path)
+
+
 def unpack_package(package_path:Path, target_path:Path):
     """
     1. Create target_path folder
@@ -102,6 +115,7 @@ def unpack_package(package_path:Path, target_path:Path):
     version, files, deps = parse_package_json(source_package_json_path)
     local_package_source = resolve_urls_with_local_path(files, target_dir_lib)
     copy_package_resources(local_package_source)
+    #download_deps(deps, target_dir_lib)
     overwrites = post_install(target_dir_lib)
     return overwrites
 
