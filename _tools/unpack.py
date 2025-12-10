@@ -59,20 +59,41 @@ def copy_package_resources(local_packages):
             print(f"Error copying {source_path} to {target_path}: {e}")
 
 
-def post_install(lib_path:Path) -> list:
+def post_install(lib_path:Path, package_name:str) -> list:
     """
-    micrOS on-device post install simulation
+    MICROS ON-DEVICE SIDE - post install simulation
     """
-    print("[Unpack] micrOS on device LM unpack (/modules)")
-    files = [f for f in lib_path.glob("LM_*.py") if f.is_file()]
+    pacman_json_path = lib_path / package_name / "pacman.json"
     overwrites = []
-    for file in files:
-        modules_path = Path(file).parent.parent / "modules"
-        file_target_path = modules_path / file.name
-        if os.path.exists(file_target_path):
-            overwrites.append(f"{file_target_path.parent.name}/{file_target_path.name}")
-        print(f"Move {file} to {file_target_path}")
-        file.rename(file_target_path)
+    if pacman_json_path.is_file():
+        # NEW pacman.json['layout'] based package management (unpack, etc...)
+        print("[Unpack] micrOS on device LM unpack from pacman.json")
+        package_layout = {}
+        with open(pacman_json_path, 'r') as f:
+            package_layout = json.load(f).get("layout", {})
+
+        for target, sources in package_layout.items():
+            for s in sources:
+                source_abs_path = lib_path / s
+                target_abs_path = lib_path.parent / target.lstrip("/") / Path(s).name
+                print(f"[Unpack] Move {source_abs_path} -> {target_abs_path}")
+                if not target_abs_path.parent.is_dir():
+                    print(f"[Unpack] Create subdir: {str(target_abs_path.parent)}")
+                    target_abs_path.parent.mkdir()
+                if target_abs_path.is_file():
+                    overwrites.append(str(target_abs_path).replace(str(lib_path.parent), ""))
+                shutil.move(source_abs_path, target_abs_path)
+    else:
+        print("[Unpack] micrOS on device LM unpack (/modules)")
+        # LEGACY - no pacman.json i the package:
+        files = [f for f in lib_path.glob("LM_*.py") if f.is_file()]
+        for file in files:
+            modules_path = Path(file).parent.parent / "modules"
+            file_target_path = modules_path / file.name
+            if os.path.exists(file_target_path):
+                overwrites.append(str(file_target_path).replace(str(lib_path.parent), ""))
+            print(f"[Unpack] Move {file} -> {file_target_path}")
+            shutil.move(file, file_target_path)
     return overwrites
 
 
@@ -94,10 +115,12 @@ def unpack_package(package_path:Path, target_path:Path):
     print(f"[UNPACK] {package_path.name}")
     source_package_json_path = package_path / "package.json"
 
-    # Build target dir structure
+    # Build target dir structure - ensure prerequisites
     target_dir_root = target_path
     target_dir_lib = target_dir_root / "lib"
     target_dir_lib_package = target_dir_lib / package_path.name
+    target_dir_web = target_dir_root / "web"
+    target_dir_data = target_dir_root / "data"
     target_dir_modules = target_dir_root / "modules"
     if not target_dir_root.is_dir():
         print(f"[Unpack] Create dir: {target_dir_root}")
@@ -108,15 +131,23 @@ def unpack_package(package_path:Path, target_path:Path):
     if not target_dir_modules.is_dir():
         print(f"[Unpack] Create dir: {target_dir_modules}")
         target_dir_modules.mkdir(exist_ok=True)
+    if not target_dir_web.is_dir():
+        print(f"[Unpack] Create dir: {target_dir_web}")
+        target_dir_web.mkdir(exist_ok=True)
+    if not target_dir_data.is_dir():
+        print(f"[Unpack] Create dir: {target_dir_data}")
+        target_dir_data.mkdir(exist_ok=True)
     if not target_dir_lib_package.is_dir():
         print(f"[Unpack] Create dir: {target_dir_lib_package}")
         target_dir_lib_package.mkdir(exist_ok=True)
 
+    # PACKAGE.JSON
     version, files, deps = parse_package_json(source_package_json_path)
     local_package_source = resolve_urls_with_local_path(files, target_dir_lib)
     copy_package_resources(local_package_source)
     #download_deps(deps, target_dir_lib)
-    overwrites = post_install(target_dir_lib)
+    # PACMAN.JSON
+    overwrites = post_install(target_dir_lib, package_path.name)
     return overwrites
 
 

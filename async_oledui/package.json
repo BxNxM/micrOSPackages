@@ -16,6 +16,10 @@
         [
             "LM_oledui.py",
             "github:BxNxM/micrOSPackages/async_oledui/package/LM_oledui.py"
+        ],
+        [
+            "async_oledui/pacman.json",
+            "github:BxNxM/micrOSPackages/async_oledui/package/pacman.json"
         ]
     ],
     "deps": []

@@ -1,0 +1,12 @@
+{ "versions": {
+    "packager": "",
+    "package": ""
+  },
+  "url": "",
+  "layout": {
+    "/modules": [],
+    "/web": [],
+    "/web/data": [],
+    "/data": []
+    }
+}

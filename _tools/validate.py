@@ -5,8 +5,10 @@ import sys
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
-# Adjust if you rename GitHub user or repo
-GITHUB_BASE = "github:BxNxM/micrOSPackages/"
+try:
+    from .create_package import GITHUB_BASE
+except ImportError:
+    from create_package import GITHUB_BASE
 
 
 def _check_package_json(path):
@@ -60,7 +62,7 @@ def resolve_repo_local_github_path(src: str, pkg_name: str, pkg_path: str):
     if not isinstance(src, str) or not src.startswith(GITHUB_BASE):
         return None
 
-    rel = src[len(GITHUB_BASE):]  # blinky_example/package/__init__.py
+    rel = src[len(GITHUB_BASE)+1:]  # blinky_example/package/__init__.py
     # First attempt: relative to repo root
     candidate_root = os.path.join(ROOT, rel)
     if os.path.exists(candidate_root):
@@ -106,6 +108,8 @@ def validate_package(pkg_path):
 
     all_ok = True
 
+    package_lm_exists = False
+    package_pacman_json_exists = False
     for entry in urls:
         if not isinstance(entry, (list, tuple)) or len(entry) != 2:
             print(f"  ❌ Invalid urls entry (expected [dest, src]): {entry}")
@@ -113,6 +117,11 @@ def validate_package(pkg_path):
             continue
 
         dest, src = entry
+        # Optional resource check
+        if dest.endswith("pacman.json"):
+            package_pacman_json_exists = True
+        if dest.split("/")[-1].startswith("LM_"):
+            package_lm_exists = True
 
         if not validate_dest_path(dest):
             print(f"  ❌ {src}  ➜  {dest}   (invalid dest path: contains '..')")
@@ -126,7 +135,7 @@ def validate_package(pkg_path):
             status = "✅" if exists else "❌"
             if not exists:
                 all_ok = False
-            rel_local = os.path.relpath(repo_local_path, ROOT)
+            rel_local = os.path.relpath(repo_local_path, ROOT).replace("../", "./")
             print(f"  {status} {src}  ➜  {dest}   (local: {rel_local})")
             continue
 
@@ -143,6 +152,8 @@ def validate_package(pkg_path):
         # 3) Other remotes: different GitHub repo or http(s)
         print(f"  🌐 {src}  ➜  {dest}   (remote, not checked)")
 
+    print(f"{'✅ Load Module exists' if package_lm_exists else '⚠️ Load Module missing'}")
+    print(f"{'✅ Packaging metadata exists (pacman.json)' if package_pacman_json_exists else '⚠️  Packaging metadata missing (pacman.json)'}")
     if all_ok:
         print("  ✔️ VALID\n")
     else:

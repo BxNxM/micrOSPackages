@@ -73,6 +73,7 @@ if __name__ == "__main__":
         package_path = create_package.REPO_ROOT / package_name / "package"
         print(f"Updating package.json for {package_name}")
         create_package.update_package_json(package_path, package_name)
+        create_package.update_pacman_json(package_path, package_name)
 
     # --- CREATE LOGIC ---
     if args.create:
