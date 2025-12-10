@@ -5,7 +5,7 @@ Short description about the application...
 ## Installation
 
 ```
-pacman donwload "github:BxNxM/micrOSPackages/blinky_example"
+pacman download "github:BxNxM/micrOSPackages/blinky_example"
 ```
 
 > Everything will be installed under `/lib/blinky_example/*` and `/modules/LM_*`

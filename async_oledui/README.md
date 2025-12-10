@@ -5,7 +5,7 @@ Short description about the application...
 ## Installation
 
 ```
-pacman donwload "github:BxNxM/micrOSPackages/async_oledui"
+pacman download "github:BxNxM/micrOSPackages/async_oledui"
 ```
 
 > Everything will be installed under `/lib/async_oledui/*` and `/modules/LM_*`

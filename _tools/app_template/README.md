@@ -5,7 +5,7 @@ Short description about the application...
 ## Installation
 
 ```
-pacman donwload "<package-url>"
+pacman download "<package-url>"
 ```
 
 > Everything will be installed under `/lib/<package-app-name>/*` and `/modules/LM_*`
