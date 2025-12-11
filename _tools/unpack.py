@@ -98,11 +98,17 @@ def post_install(lib_path:Path, package_name:str) -> list:
 
 
 def download_deps(deps:list, target_path:Path):
+    """
+    micrOS.Simulator -> mip.py copy usage - download 3pps
+    """
+    target_path = str(target_path)              # convert it to micropython compatible string
+    print(f"INSTALL 3PPs FROM DEPS: {deps}\n\tTARGET: {target_path}")
     for dep in deps:
+        if not isinstance(dep, list):
+            raise Exception(f"Invalid deps structure: {dep} must be list, structure must be [[],[],...]")
         ref = dep[0]
         version = dep[1] if len(dep) > 1 else "latest"
         print(f"[DEP] Install: {ref} @{version} ({target_path})")
-        # TODO version handling...
         mip_install(ref, target=target_path)
 
 
@@ -112,7 +118,7 @@ def unpack_package(package_path:Path, target_path:Path):
     2. Parse package.json from package_path/package.json
     3. Copy files from package_path/package/* to target_path based on package.json urls
     """
-    print(f"[UNPACK] {package_path.name}")
+    print(f"📦 [UNPACK] {package_path.name}")
     source_package_json_path = package_path / "package.json"
 
     # Build target dir structure - ensure prerequisites
@@ -145,7 +151,11 @@ def unpack_package(package_path:Path, target_path:Path):
     version, files, deps = parse_package_json(source_package_json_path)
     local_package_source = resolve_urls_with_local_path(files, target_dir_lib)
     copy_package_resources(local_package_source)
-    #download_deps(deps, target_dir_lib)
+    # Download deps - 3pps
+    try:
+        download_deps(deps, target_dir_lib)
+    except Exception as e:
+        print(f"❌ 3PP DEP install failed: {e}")
     # PACMAN.JSON
     overwrites = post_install(target_dir_lib, package_path.name)
     return overwrites
@@ -159,11 +169,11 @@ def unpack_all(target:Path=None):
     """
     if target is None:
         target = REPO_ROOT / "unpacked"
-    print(f"Unpack all packages from {REPO_ROOT}")
+    print(f"UNPACK ALL PACKAGES FROM {REPO_ROOT}")
     all_overwrites = []
     for pkg in find_all_packages(REPO_ROOT):
         all_overwrites += unpack_package(Path(pkg), target)
-    print(f"[Unpack] Overwritten from packages: {all_overwrites}")
+    print(f"[UNPACK] Overwritten from packages: {all_overwrites}")
     return all_overwrites
 
 

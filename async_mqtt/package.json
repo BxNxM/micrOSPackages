@@ -1,0 +1,23 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "async_mqtt/__init__.py",
+            "github:BxNxM/micrOSPackages/async_mqtt/package/__init__.py"
+        ],
+        [
+            "LM_mqtt_client.py",
+            "github:BxNxM/micrOSPackages/async_mqtt/package/LM_mqtt_client.py"
+        ],
+        [
+            "async_mqtt/pacman.json",
+            "github:BxNxM/micrOSPackages/async_mqtt/package/pacman.json"
+        ]
+    ],
+    "deps": [
+        [
+            "github:peterhinch/micropython-mqtt",
+            "master"
+        ]
+    ]
+}
