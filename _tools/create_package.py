@@ -66,6 +66,11 @@ def create_package(package, module):
     :param package: package/application name (folder)
     :param module: module name public load module (LM_*)
     """
+    # 0. Input validation and normalization
+    if module.statswith("LM_"):
+        module = module.replace("LM_", "")
+    if "-" in package:
+        package = package.replace("-", "_")
     # 1. Create new-package directory in repo root
     print(f"⭐️[1/7] Create new-package directory: {package}")
     target = REPO_ROOT / package
