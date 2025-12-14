@@ -14,6 +14,11 @@ pacman download "<package-url>"
 
 [packages](https://docs.micropython.org/en/latest/reference/packages.html)
 
+## micrOS Project
+
+[Project Docs](https://github.com/BxNxM/micrOS/tree/master)
+[Coding Docs](https://github.com/BxNxM/micrOS/blob/master/APPLICATION_GUIDE.md)
+
 ## Usage
 
 ### **load** function - load the app into memory

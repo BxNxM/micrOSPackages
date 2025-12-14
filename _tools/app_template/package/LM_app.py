@@ -1,6 +1,8 @@
 """
 micrOS Application exposed functions
-  Unpackaging moves this module under /modules/ in the micrOS filesystem.
+
+For more coding details visit:
+    https://github.com/BxNxM/micrOS/blob/master/APPLICATION_GUIDE.md
 """
 
 from package import shared

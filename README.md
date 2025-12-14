@@ -49,21 +49,56 @@ The tools.py script provides a unified interface to validate packages, create ne
 # Repository Structure
 
 ```bash
+➜  micrOSPackages git:(main) ✗ tree -L 3     
+.
 ├── README.md
-├── _tools
+├── _tools									<- PACKAGE CREATION AND MAINTENANCE SCRIPTS
 │   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── create_package.cpython-312.pyc
+│   │   ├── mip.cpython-312.pyc
+│   │   ├── serve_packages.cpython-312.pyc
+│   │   ├── unpack.cpython-312.pyc
+│   │   └── validate.cpython-312.pyc
 │   ├── app_template
 │   │   ├── README.md
 │   │   ├── package
-│   │   │   ├── LM_app.py
-│   │   │   ├── __init__.py
-│   │   │   └── shared.py
 │   │   └── package.json
 │   ├── create_package.py
+│   ├── mip.py
 │   ├── serve_packages.py
+│   ├── unpack.py
 │   └── validate.py
+├── async_mqtt								<- APPLICATION PACKAGE
+│   ├── README.md
+│   ├── package
+│   │   ├── LM_mqtt_client.py
+│   │   ├── __init__.py
+│   │   └── pacman.json
+│   └── package.json
+├── async_oledui								<- APPLICATION PACKAGE
+│   ├── README.md
+│   ├── package
+│   │   ├── LM_oledui.py
+│   │   ├── __init__.py
+│   │   ├── pacman.json
+│   │   ├── peripheries.py
+│   │   └── uiframes.py
+│   └── package.json
+├── blinky_example							<- APPLICATION PACKAGE
+│   ├── README.md
+│   ├── package
+│   │   ├── LM_blinky.py
+│   │   ├── __init__.py
+│   │   └── pacman.json
+│   └── package.json
 └── tools.py
 ```
+
+> package.json: **micropython** standard for mip installations
+> pacman.json: OAM metadata for the package for **micrOS** package unpack/update/delete
+
 
 ### Load Module Naming Convention
 
@@ -93,6 +128,7 @@ The validation process ensures:
 - package.json exists
 - all files listed inside package.json actually exist
 - the package structure is valid for mip installation
+- pacman.json exists
 
 ---
 
@@ -104,8 +140,8 @@ Update the urls section of a package’s package.json:
 python3 tools.py --update mypackage
 ```
 
-
-This reads, modifies, and rewrites the package.json file cleanly.
+> package.json (urls) generation for all /package files
+> pacman.json metadata generation from package.json
 
 ---
 
@@ -129,6 +165,33 @@ Start the local mip package registry server:
 
 ```bash
 python3 tools.py --serve
+```
+
+### Output:
+
+```
+➜  micrOSPackages git:(main) ✗ ./tools.py --serve
+Starting server...
+🚀 Serving repo root: /Users/bnm/micrOS/micrOSPackages
+🌐 HTTP server: http://0.0.0.0:8000/
+📡 Detected local IP: http://10.0.1.73:8000/
+
+📦 Available mip packages in repo root:
+
+  • async_mqtt
+    🧪 Test with curl:     curl http://10.0.1.73:8000/async_mqtt/package.json | jq .
+    👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/async_mqtt/')
+    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/async_mqtt/'
+  • async_oledui
+    🧪 Test with curl:     curl http://10.0.1.73:8000/async_oledui/package.json | jq .
+    👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/async_oledui/')
+    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/async_oledui/'
+  • blinky_example
+    🧪 Test with curl:     curl http://10.0.1.73:8000/blinky_example/package.json | jq .
+    👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/blinky_example/')
+    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/blinky_example/'
+
+🛠️ Press Ctrl+C to stop.
 ```
 
 ---

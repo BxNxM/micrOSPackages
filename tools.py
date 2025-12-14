@@ -36,7 +36,7 @@ def build_parser():
     # UPDATE: package.json urls
     parser.add_argument(
         "-u", "--update",
-        help="✅ Update application package.json by its package name"
+        help="✅ Update application package.json and pacman.json by package name"
     )
 
     # SERVE: simple flag
@@ -45,6 +45,14 @@ def build_parser():
         action="store_true",
         help="🌐 Unpack all packages for testing"
     )
+
+    # Clean cache
+    parser.add_argument(
+        "-cl", "--clean",
+        action="store_true",
+        help="🗄️ Clean package cache (3PPs) and default unpacked folder if exists"
+    )
+
 
     return parser
 
@@ -91,3 +99,7 @@ if __name__ == "__main__":
     # --- UNPACK LOGIC (testing) ---
     if args.unpack:
         unpack.unpack_all()
+
+    # --- CACHE CLEAN LOGIC ---
+    if args.clean:
+        unpack.clean_cache()

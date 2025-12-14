@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import shutil
 REPO_ROOT  = Path(__file__).resolve().parent.parent
+CACHE_DIR_PATH  = Path(__file__).resolve().parent / "cache"
+DEFAULT_UNPACKED_DIR = REPO_ROOT / "unpacked"
 
 try:
     from .validate import find_all_packages, GITHUB_BASE
@@ -97,19 +99,110 @@ def post_install(lib_path:Path, package_name:str) -> list:
     return overwrites
 
 
+# --- the caching decorator (one main folder per ref@version) ---
+def cache_dep(func):
+
+    def _copy_delta(delta_paths: set[Path], src_root: Path, cache_pkg: Path) -> None:
+        """
+        Copy new/changed items listed in delta_paths into cache_pkg, preserving
+        paths relative to src_root. Creates missing dirs as needed.
+
+        delta_paths: absolute Paths (files/dirs) under src_root
+        src_root: the root to compute relative paths from (e.g. .../unpacked/lib)
+        cache_pkg: destination root
+        """
+        src_root = Path(src_root).resolve()
+        cache_pkg = Path(cache_pkg).resolve()
+
+        # Work only with items that still exist and are under src_root
+        items = []
+        for p in delta_paths:
+            p = Path(p)
+            if not p.exists():
+                continue
+            try:
+                p.relative_to(src_root)
+            except ValueError:
+                continue
+            items.append(p)
+
+        # Ensure directories are created before files (important)
+        items.sort(key=lambda p: (p.is_file(), str(p)))
+
+        for src in items:
+            rel = src.relative_to(src_root)
+            dst = cache_pkg / rel
+
+            if src.is_dir():
+                dst.mkdir(parents=True, exist_ok=True)
+            else:
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+
+    def wrapper(ref:str, version:str, target_path:Path):
+        target_str = str(target_path)
+        cache_root = CACHE_DIR_PATH / "deps"
+        cache_pkg = cache_root / f"{ref}@{version}"
+
+        print(f"🗄️ [CACHE] Deps path: {str(cache_pkg)}")
+        if cache_pkg.is_dir():
+            print("[CACHE] RESTORE ... skip mip install")
+            try:
+                _copy_delta({p.resolve() for p in cache_pkg.rglob("*")}, cache_pkg, target_path)
+                return None
+            except Exception as e:
+                print(f"\t❌ Restore failed: {e}")
+
+        # Install and cache 3PP from the internet
+        print(f"\tCreate cache dir: {'/'.join(str(cache_pkg).split('/')[-2:])}")
+        os.makedirs(cache_pkg, exist_ok=True)
+        before_snapshot = {p.resolve() for p in target_path.rglob("*")}
+        # Run decorated function
+        result = func(ref, version, target_str)
+        after_snapshot = {p.resolve() for p in target_path.rglob("*")}
+        new_contents = after_snapshot - before_snapshot
+        print("[CACHE] BACKUP ... cache mip install content")
+        try:
+            _copy_delta(new_contents, target_path, cache_pkg)
+        except Exception as e:
+            print(f"\t❌ Backup failed: {e}")
+        return result
+
+    return wrapper
+
+def clean_cache():
+    if DEFAULT_UNPACKED_DIR.exists():
+        print(f"🗑️  Clean default unpacked dir: {str(DEFAULT_UNPACKED_DIR)}")
+        shutil.rmtree(DEFAULT_UNPACKED_DIR)
+    if CACHE_DIR_PATH.exists():
+        print(f"🗑️  Clean cache dir: {str(CACHE_DIR_PATH)}")
+        shutil.rmtree(CACHE_DIR_PATH)
+        return
+    print(f"Cache dir not exists: {str(CACHE_DIR_PATH)}")
+
+# --- the decorated single-dependency installer ---
+@cache_dep
+def _install_dep(ref:str, version:str, target_path:Path):
+    if isinstance(target_path, Path):
+        # Make sure target_path is mip compatible (str)
+        target_path = str(target_path)
+    print(f"[DEP] Install: {ref} @{version} ({target_path})")
+    mip_install(ref, target=target_path)
+
+
 def download_deps(deps:list, target_path:Path):
     """
-    micrOS.Simulator -> mip.py copy usage - download 3pps
+    micrOS.Simulator -> mip.py copy usage - download 3pps (with 3PP caching)
     """
-    target_path = str(target_path)              # convert it to micropython compatible string
-    print(f"INSTALL 3PPs FROM DEPS: {deps}\n\tTARGET: {target_path}")
+    print(f"INSTALL 3PPs FROM DEPS: {deps}\n\tTARGET: {str(target_path)}")
     for dep in deps:
         if not isinstance(dep, list):
             raise Exception(f"Invalid deps structure: {dep} must be list, structure must be [[],[],...]")
         ref = dep[0]
         version = dep[1] if len(dep) > 1 else "latest"
-        print(f"[DEP] Install: {ref} @{version} ({target_path})")
-        mip_install(ref, target=target_path)
+
+        # Only this part is now "decorated logic":
+        _install_dep(ref, version, target_path)
 
 
 def unpack_package(package_path:Path, target_path:Path):
@@ -161,14 +254,13 @@ def unpack_package(package_path:Path, target_path:Path):
     return overwrites
 
 
-
 def unpack_all(target:Path=None):
     """
     Find and unpack all packages to target folder
     :param target: target directory
     """
     if target is None:
-        target = REPO_ROOT / "unpacked"
+        target = DEFAULT_UNPACKED_DIR
     print(f"UNPACK ALL PACKAGES FROM {REPO_ROOT}")
     all_overwrites = []
     for pkg in find_all_packages(REPO_ROOT):
