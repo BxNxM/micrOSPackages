@@ -97,6 +97,7 @@ The tools.py script provides a unified interface to validate packages, create ne
 ```
 
 > package.json: **micropython** standard for mip installations
+
 > pacman.json: OAM metadata for the package for **micrOS** package unpack/update/delete
 
 
@@ -141,6 +142,7 @@ python3 tools.py --update mypackage
 ```
 
 > package.json (urls) generation for all /package files
+
 > pacman.json metadata generation from package.json
 
 ---
