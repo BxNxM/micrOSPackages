@@ -85,17 +85,6 @@ def post_install(lib_path:Path, package_name:str) -> list:
                 if target_abs_path.is_file():
                     overwrites.append(str(target_abs_path).replace(str(lib_path.parent), ""))
                 shutil.move(source_abs_path, target_abs_path)
-    else:
-        print("[Unpack] micrOS on device LM unpack (/modules)")
-        # LEGACY - no pacman.json i the package:
-        files = [f for f in lib_path.glob("LM_*.py") if f.is_file()]
-        for file in files:
-            modules_path = Path(file).parent.parent / "modules"
-            file_target_path = modules_path / file.name
-            if os.path.exists(file_target_path):
-                overwrites.append(str(file_target_path).replace(str(lib_path.parent), ""))
-            print(f"[Unpack] Move {file} -> {file_target_path}")
-            shutil.move(file, file_target_path)
     return overwrites
 
 
