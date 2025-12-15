@@ -9,6 +9,29 @@ micrOS devices can install these packages from GitHub or from a local mip server
 
 ---
 
+# 📦 Package Catalog
+
+|                    PFOJECT                   |                SHORT DESCRIPTION     |
+| ---------------------------------------------| ------------------------------------ | 
+| [blinky_example](./blinky_example/README.md) | Simple package example. Implements basic Pin.OUT operations.
+| [async_mqtt](./async_mqtt/README.md)         | Async MQTT client with micrOS Notifications integration.
+| [async_oledui](./async_oledui/README.md)     | SSD1306 and sh1106 OLED display plug-n-play GUI with trackball support.
+| []() | Add your own.
+
+
+---
+
+```
+______               _                                  _   
+|  _  \             | |                                | |  
+| | | |_____   _____| | ___  _ __  _ __ ___   ___ _ __ | |_ 
+| | | / _ \ \ / / _ \ |/ _ \| '_ \| '_ ` _ \ / _ \ '_ \| __|
+| |/ /  __/\ V /  __/ | (_) | |_) | | | | | |  __/ | | | |_ 
+|___/ \___| \_/ \___|_|\___/| .__/|_| |_| |_|\___|_| |_|\__|
+                            | |                             
+                            |_|                             
+```
+
 # CLI Tool (tools.py)
 
 The tools.py script provides a unified interface to validate packages, create new packages, update package.json files, and start a local mip package registry server.
