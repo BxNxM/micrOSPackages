@@ -183,15 +183,15 @@ Starting server...
   • async_mqtt
     🧪 Test with curl:     curl http://10.0.1.73:8000/async_mqtt/package.json | jq .
     👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/async_mqtt/')
-    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/async_mqtt/'
+    👉 On device (shell):  pacman install 'http://10.0.1.73:8000/async_mqtt/'
   • async_oledui
     🧪 Test with curl:     curl http://10.0.1.73:8000/async_oledui/package.json | jq .
     👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/async_oledui/')
-    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/async_oledui/'
+    👉 On device (shell):  pacman install 'http://10.0.1.73:8000/async_oledui/'
   • blinky_example
     🧪 Test with curl:     curl http://10.0.1.73:8000/blinky_example/package.json | jq .
     👉 On device (repl):   import mip; mip.install('http://10.0.1.73:8000/blinky_example/')
-    👉 On device (shell):  pacman download 'http://10.0.1.73:8000/blinky_example/'
+    👉 On device (shell):  pacman install 'http://10.0.1.73:8000/blinky_example/'
 
 🛠️ Press Ctrl+C to stop.
 ```
@@ -210,7 +210,7 @@ mip.install("github:BxNxM/micrOSPackages/blinky_example")
 ## From Shell
 
 ```bash
-pacman download "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_example"
+pacman install "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_example"
 ```
 
 ---

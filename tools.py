@@ -93,7 +93,7 @@ if __name__ == "__main__":
         print(f"  package name: {args.package}")
         print(f"  command: {args.module}")
         create_package.create_package(package=args.package, module=args.module)
-        print(f"Shell example, download: pacman download ...")
+        print(f"Shell example: pacman install ...")
         print(f"Shell example, execution:\n\t{args.module} load\n\t{args.module} do")
 
     # --- UNPACK LOGIC (testing) ---

@@ -133,7 +133,7 @@ def print_instructions(ip: str, port: int, packages: List[str]) -> None:
         print(f"  • {name}")
         print(f"    🧪 Test with curl:     curl {url}package.json | jq .")
         print(f"    👉 On device (repl):   import mip; mip.install('{url}')")
-        print(f"    👉 On device (shell):  pacman download '{url}'")
+        print(f"    👉 On device (shell):  pacman install '{url}'")
     print("")
 
 
