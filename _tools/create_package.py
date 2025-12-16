@@ -67,7 +67,7 @@ def create_package(package, module):
     :param module: module name public load module (LM_*)
     """
     # 0. Input validation and normalization
-    if module.statswith("LM_"):
+    if module.startswith("LM_"):
         module = module.replace("LM_", "")
     if "-" in package:
         package = package.replace("-", "_")

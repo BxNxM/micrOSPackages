@@ -1,0 +1,30 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "neopixel_matrix/matrix_draw.html",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/matrix_draw.html"
+        ],
+        [
+            "neopixel_matrix/__init__.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/__init__.py"
+        ],
+        [
+            "neopixel_matrix/shared.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/shared.py"
+        ],
+        [
+            "neopixel_matrix/IO_s3matrix.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/IO_s3matrix.py"
+        ],
+        [
+            "neopixel_matrix/pacman.json",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/pacman.json"
+        ],
+        [
+            "LM_neomatrix.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/LM_neomatrix.py"
+        ]
+    ],
+    "deps": []
+}

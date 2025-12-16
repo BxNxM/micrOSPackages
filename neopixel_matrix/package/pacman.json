@@ -1,0 +1,17 @@
+{
+    "versions": {
+        "packager": "0.1.0",
+        "package": "0.0.1"
+    },
+    "url": "github:BxNxM/micrOSPackages/neopixel_matrix",
+    "layout": {
+        "/modules": [
+            "LM_neomatrix.py"
+        ],
+        "/web": [
+            "neopixel_matrix/matrix_draw.html"
+        ],
+        "/web/data": [],
+        "/data": []
+    }
+}
