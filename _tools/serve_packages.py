@@ -17,6 +17,27 @@ TOOLS_DIR = os.path.abspath(os.path.dirname(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
 DEFAULT_PORT = 8000
 
+MIME_TYPES = {
+    ".html": "text/html; charset=utf-8",
+    ".htm":  "text/html; charset=utf-8",
+    ".css":  "text/css; charset=utf-8",
+    ".js":   "application/javascript",
+    ".json": "application/json",
+    ".png":  "image/png",
+    ".jpg":  "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif":  "image/gif",
+    ".svg":  "image/svg+xml",
+    ".ico":  "image/x-icon",
+    ".txt":  "text/plain; charset=utf-8",
+}
+
+def get_content_type(fs_path):
+    dot = fs_path.rfind(".")
+    if dot == -1:
+        return "application/octet-stream"
+    return MIME_TYPES.get(fs_path[dot:].lower(), "application/octet-stream")
+
 
 def get_local_ip() -> str:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -108,7 +129,7 @@ class PackageRequestHandler(http.server.SimpleHTTPRequestHandler):
                     patched = patch_package_json(raw, self.base_url, package_name)
 
                     self.send_response(200)
-                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Type", get_content_type(fs_path))
                     self.send_header("Content-Length", str(len(patched)))
                     self.end_headers()
                     self.wfile.write(patched)
