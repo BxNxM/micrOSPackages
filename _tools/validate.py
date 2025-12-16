@@ -10,6 +10,12 @@ try:
 except ImportError:
     from create_package import GITHUB_BASE
 
+VERBOSE = True
+
+def verbose_print(text):
+    if VERBOSE:
+        print(text)
+
 
 def _check_package_json(path):
     """Check if a package"""
@@ -92,7 +98,7 @@ def validate_package(pkg_path):
     pkg_json = os.path.join(pkg_path, "package.json")
     pkg_name = os.path.basename(pkg_path)
 
-    print(f"\n📦 {pkg_name}")
+    print(f"{'\n' if VERBOSE else ''}📦 {pkg_name}")
 
     try:
         with open(pkg_json, "r") as f:
@@ -136,7 +142,7 @@ def validate_package(pkg_path):
             if not exists:
                 all_ok = False
             rel_local = os.path.relpath(repo_local_path, ROOT).replace("../", "./")
-            print(f"  {status} {src}  ➜  {dest}   (local: {rel_local})")
+            verbose_print(f"  {status} {src}  ➜  {dest}   (local: {rel_local})")
             continue
 
         # 2) Plain local paths (relative to package folder)
@@ -146,23 +152,26 @@ def validate_package(pkg_path):
             status = "✅" if exists else "❌"
             if not exists:
                 all_ok = False
-            print(f"  {status} {src}  ➜  {dest}")
+            verbose_print(f"  {status} {src}  ➜  {dest}")
             continue
 
         # 3) Other remotes: different GitHub repo or http(s)
-        print(f"  🌐 {src}  ➜  {dest}   (remote, not checked)")
+        verbose_print(f"  🌐 {src}  ➜  {dest}   (remote, not checked)")
 
-    print(f"{'✅ Load Module exists' if package_lm_exists else '⚠️ Load Module missing'}")
-    print(f"{'✅ Packaging metadata exists (pacman.json)' if package_pacman_json_exists else '⚠️  Packaging metadata missing (pacman.json)'}")
+    verbose_print(f"{'✅ Load Module exists' if package_lm_exists else '⚠️ Load Module missing'}")
+    verbose_print(f"{'✅ Packaging metadata exists (pacman.json)' if package_pacman_json_exists else '⚠️  Packaging metadata missing (pacman.json)'}")
     if all_ok:
-        print("  ✔️ VALID\n")
+        verbose_print("  ✔️ VALID\n")
     else:
         print("  ✖️ INVALID\n")
 
     return all_ok
 
 
-def main(pack_name:str=None):
+def main(pack_name:str=None, verbose:bool=True):
+    global VERBOSE
+    VERBOSE = verbose
+
     packages:list = []
     if pack_name is None:
         packages = find_all_packages(os.path.dirname(ROOT))
@@ -175,7 +184,7 @@ def main(pack_name:str=None):
         print("⚠️ No packages found (no subfolders containing package.json).")
         return 1
 
-    print(f"🔍 Found {len(packages)} package(s).")
+    verbose_print(f"🔍 Found {len(packages)} package(s).")
 
     all_ok = True
     for pkg in packages:
@@ -183,11 +192,13 @@ def main(pack_name:str=None):
             all_ok = False
 
     if all_ok:
-        print("🎉 All packages valid!")
-        return 0
+        print("🎉 All packages are valid!")
+        return True
     else:
-        print("❗ Some packages failed validation.")
-        return 1
+        print("❗ Some packages failed validation.\n\tFix: ./tools.py -u <package-name>")
+        if not VERBOSE:
+            print("\tFor more details, run: ./tools.py --validate")
+        return False
 
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@ from microIO import bind_pin
 from Types import resolve
 from Common import manage_task, AnimationPlayer, web_dir, syslog, web_endpoint
 
+from neopixel_matrix.effects import rainbow_gen
+
 
 class NeoPixelMatrix(AnimationPlayer):
     INSTANCE = None
@@ -249,45 +251,10 @@ def status():
 # -----------------------------------------------------------------------------
 
 def rainbow(speed_ms=0):
-    def _effect_rainbow():
-        def _hsv_to_rgb(h, s, v):
-            max_color = 150   #255
-            h = float(h)
-            s = float(s)
-            v = float(v)
-            i = int(h * 6.0)
-            f = (h * 6.0) - i
-            p = v * (1.0 - s)
-            q = v * (1.0 - s * f)
-            t = v * (1.0 - s * (1.0 - f))
-            i = i % 6
-            if i == 0:
-                r, g, b = v, t, p
-            elif i == 1:
-                r, g, b = q, v, p
-            elif i == 2:
-                r, g, b = p, v, t
-            elif i == 3:
-                r, g, b = p, q, v
-            elif i == 4:
-                r, g, b = t, p, v
-            elif i == 5:
-                r, g, b = v, p, q
-            return int(r * max_color), int(g * max_color), int(b * max_color)
-
-        width = 8
-        height = 8
-        total_frames = 64
-
-        for frame in range(total_frames):
-            for y in range(height):
-                for x in range(width):
-                    index = y * width + x
-                    hue = ((index + frame) % 64) / 64.0
-                    r, g, b = _hsv_to_rgb(hue, 1.0, 0.7)
-                    yield x, y, (r, g, b)
-
-    return load().play(_effect_rainbow, speed_ms=speed_ms, bt_draw=True, bt_size=8)
+    """
+    Play rainbow effect
+    """
+    return load().play(rainbow_gen, speed_ms=speed_ms, bt_draw=True, bt_size=8)
 
 
 def snake(speed_ms:int=30, length:int=6):

@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Enable githooks:
+#   git config --get core.hooksPath
+#   git config core.hooksPath .githooks
+
+set -e
+
+echo "🔍 Running tools.py validation (pre-commit)"
+
+# Move to repo root (important!)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT" || exit 1
+
+set +e
+./tools.py -v -q
+rc=$?
+set -e
+
+if [ $rc -ne 0 ]; then
+  echo "❌ Skip git action ($rc)"
+  exit 1
+fi

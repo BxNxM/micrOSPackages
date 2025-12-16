@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 from _tools import validate, serve_packages, create_package, unpack
 
 def build_parser():
@@ -53,6 +54,12 @@ def build_parser():
         help="🗄️ Clean package cache (3PPs) and default unpacked folder if exists"
     )
 
+    # Clean cache
+    parser.add_argument(
+        "-q", "--quiet",
+        action="store_true",
+        help="🤐 Minimize printouts when possible (validation)"
+    )
 
     return parser
 
@@ -60,15 +67,7 @@ def build_parser():
 if __name__ == "__main__":
     parser = build_parser()
     args = parser.parse_args()
-
-    # --- VALIDATE LOGIC ---
-    if args.validate is not None:
-        if args.validate == "__ALL__":
-            print("Validating ALL packages...")
-            validate.main()
-        else:
-            print(f"Validating package: {args.validate}")
-            validate.main(pack_name=args.validate)
+    quiet = args.quiet
 
     # --- SERVE LOGIC ---
     if args.serve:
@@ -103,3 +102,14 @@ if __name__ == "__main__":
     # --- CACHE CLEAN LOGIC ---
     if args.clean:
         unpack.clean_cache()
+
+    # --- VALIDATE LOGIC - LAST BECAUSE SYS EXIT CODE ---
+    if args.validate is not None:
+        if args.validate == "__ALL__":
+            print("Validating ALL packages...")
+            is_valid = validate.main(verbose=not quiet)
+        else:
+            print(f"Validating package: {args.validate}")
+            is_valid = validate.main(pack_name=args.validate, verbose=not quiet)
+        if not is_valid:
+            sys.exit(1)

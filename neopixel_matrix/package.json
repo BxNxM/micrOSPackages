@@ -2,16 +2,16 @@
     "version": "0.0.1",
     "urls": [
         [
+            "neopixel_matrix/effects.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/effects.py"
+        ],
+        [
             "neopixel_matrix/matrix_draw.html",
             "github:BxNxM/micrOSPackages/neopixel_matrix/package/matrix_draw.html"
         ],
         [
             "neopixel_matrix/__init__.py",
             "github:BxNxM/micrOSPackages/neopixel_matrix/package/__init__.py"
-        ],
-        [
-            "neopixel_matrix/shared.py",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/shared.py"
         ],
         [
             "neopixel_matrix/IO_s3matrix.py",
