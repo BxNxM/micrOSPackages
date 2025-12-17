@@ -2,6 +2,7 @@
 import os
 import json
 import sys
+from pathlib import Path
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -94,7 +95,10 @@ def validate_dest_path(dest: str) -> bool:
     return True
 
 
-def validate_package(pkg_path):
+def validate_package_json(pkg_path):
+    """
+    Validate package.json and file references
+    """
     pkg_json = os.path.join(pkg_path, "package.json")
     pkg_name = os.path.basename(pkg_path)
 
@@ -160,12 +164,36 @@ def validate_package(pkg_path):
 
     verbose_print(f"{'✅ Load Module exists' if package_lm_exists else '⚠️ Load Module missing'}")
     verbose_print(f"{'✅ Packaging metadata exists (pacman.json)' if package_pacman_json_exists else '⚠️  Packaging metadata missing (pacman.json)'}")
-    if all_ok:
-        verbose_print("  ✔️ VALID\n")
-    else:
-        print("  ✖️ INVALID\n")
-
     return all_ok
+
+
+def validate_package(pkg_path):
+    """
+    Validate /package folder content against package.json
+    - Ensure all files present
+    - TODO: check files by name
+    """
+    if not isinstance(pkg_path, Path):
+        pkg_path = Path(pkg_path)
+
+    pkg_json = pkg_path / "package.json"
+    pkg_content_path = pkg_path / "package"
+    package_folder_files = [p for p in pkg_content_path.iterdir() if p.is_file()]
+    folder_files_len = len(package_folder_files)
+
+    try:
+        with  open(pkg_json, 'r') as f:
+            pkg_json_urls = json.load(f).get("urls", [])
+        pkg_json_urls_len = len(pkg_json_urls)
+    except Exception as e:
+        print(f"❌ Cannot load {str(pkg_json)}: {e}")
+        pkg_json_urls_len = 0
+
+    # Check package.json and packages are matching
+    if folder_files_len == pkg_json_urls_len:
+        return True
+    print(f"❌ File missmatch in {pkg_path.name}/package.json vs. {pkg_path.name}/package")
+    return False
 
 
 def main(pack_name:str=None, verbose:bool=True):
@@ -188,17 +216,24 @@ def main(pack_name:str=None, verbose:bool=True):
 
     all_ok = True
     for pkg in packages:
+        package_ok = True
+        if not validate_package_json(pkg):
+            package_ok = False
         if not validate_package(pkg):
-            all_ok = False
+            package_ok = False
+        all_ok &= package_ok
+        if package_ok:
+            verbose_print("  ✔️ VALID\n")
+        else:
+            print("  ✖️ INVALID\n")
 
     if all_ok:
         print("🎉 All packages are valid!")
-        return True
     else:
-        print("❗ Some packages failed validation.\n\tFix: ./tools.py -u <package-name>")
+        print("❗ Some packages failed validation.\n\tFix: ./tools.py --update <package-name>")
         if not VERBOSE:
             print("\tFor more details, run: ./tools.py --validate")
-        return False
+    return all_ok
 
 
 if __name__ == "__main__":

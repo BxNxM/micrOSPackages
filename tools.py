@@ -2,7 +2,22 @@
 
 import argparse
 import sys
+import subprocess
 from _tools import validate, serve_packages, create_package, unpack
+
+def check_githooks():
+    try:
+        r = subprocess.run(
+            ["git", "config", "--local", "--get", "core.hooksPath"],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return  # git not available, silently ignore
+    if r.stdout.strip() != ".githooks":
+        print("⚠️  Git hooks are not enabled for this repo.")
+        print("👉 Hint: git config core.hooksPath .githooks")
+
 
 def build_parser():
     parser = argparse.ArgumentParser(
@@ -65,6 +80,8 @@ def build_parser():
 
 
 if __name__ == "__main__":
+    check_githooks()
+
     parser = build_parser()
     args = parser.parse_args()
     quiet = args.quiet
