@@ -1,13 +1,12 @@
-from random import randint
 from neopixel import NeoPixel
 from machine import Pin
-from utime import sleep_ms
 
 from microIO import bind_pin
 from Types import resolve
-from Common import manage_task, AnimationPlayer, web_dir, syslog, web_endpoint
+from Common import manage_task, AnimationPlayer, data_dir, web_endpoint
 
-from neopixel_matrix.effects import rainbow_gen
+from neopixel_matrix.effects import make_context, noise_gen, rainbow_gen, snake_gen, spiral_gen
+from neopixel_matrix.file_player import file_frame_gen, valid_file_name
 
 
 class NeoPixelMatrix(AnimationPlayer):
@@ -24,8 +23,12 @@ class NeoPixelMatrix(AnimationPlayer):
         self._brightness = 0.20                                 # Brightness level, default 20%
         NeoPixelMatrix.INSTANCE = self
 
-    def update(self, x:int, y:int, color:tuple[int, int, int]):
+    def update(self, *data):
         # Animation player will call this method to update pixels.
+        if len(data) == 1:
+            self._set_colormap(data[0])
+            return
+        x, y, color = data
         self.set_pixel(x, y, color)
 
     def draw(self):
@@ -66,10 +69,10 @@ class NeoPixelMatrix(AnimationPlayer):
         """
         Converts RGB to GRB with brightness adjustment.
         """
-        def scale(val):
+        def _scale(val):
             return max(0, min(255, int(val * self._brightness)))
 
-        return scale(color[1]), scale(color[0]), scale(color[2])
+        return _scale(color[1]), _scale(color[0]), _scale(color[2])
 
     def set_pixel(self, x: int, y: int, color: tuple[int, int, int], zigzag:bool=True):
         """
@@ -121,10 +124,16 @@ class NeoPixelMatrix(AnimationPlayer):
         if len(bitmap) == 0:
             self.clear()
             return
+        self._set_colormap(bitmap)
+        self.draw()
+
+    def _set_colormap(self, bitmap:list):
+        """
+        Set colors as a color map without drawing.
+        """
         for bm in bitmap:
             x, y, color = bm
             self.set_pixel(x, y, color, zigzag=False)
-        self.draw()
 
     def export_colormap(self):
         """
@@ -135,6 +144,12 @@ class NeoPixelMatrix(AnimationPlayer):
             x, y = self._index_to_coord(i, zigzag=False)
             colormap.append((x, y, color))
         return colormap
+
+    def effect_context(self):
+        """
+        Share matrix dimensions and dynamic color with effect generators.
+        """
+        return make_context(self.width, self.height, lambda: NeoPixelMatrix.DEFAULT_COLOR)
 
 ##########################################################################################################
 ##########################################################################################################
@@ -213,7 +228,7 @@ def control(speed_ms=None, bt_draw:bool=None):
     Change the speed of frame generation for animations.
     """
     data = load().control(play_speed_ms=speed_ms, bt_draw=bt_draw)
-    _speed_ms = data.get("player_speed", None)
+    _speed_ms = data.get("speed_ms", None)
     return f"Control state: {data} (speed: {_speed_ms}ms)"
 
 
@@ -236,6 +251,22 @@ def draw_colormap(bitmap):
     return "Done."
 
 
+def play_file(file, speed_ms:int=85):
+    """
+    Play colormap animation from a JSON-lines file under /data.
+    """
+    if not valid_file_name(file):
+        return "Invalid file name: use a file name with extension"
+    path = data_dir(file)
+    try:
+        f = open(path, "r")
+        f.close()
+    except Exception as e:
+        return str(e)
+    matrix = load()
+    return matrix.play(lambda: file_frame_gen(path), speed_ms=speed_ms, bt_draw=False)
+
+
 def get_colormap():
     return load().export_colormap()
 
@@ -244,8 +275,9 @@ def status():
     """
     Get the current status of the matrix
     """
+    matrix = load()
     r, g, b = NeoPixelMatrix.DEFAULT_COLOR
-    br = NeoPixelMatrix.INSTANCE._brightness
+    br = matrix._brightness
     return {'r': r, 'g': g, 'b': b, 'br': int(br*100)}
 
 
@@ -256,136 +288,27 @@ def rainbow(speed_ms=0):
     """
     Play rainbow effect
     """
-    return load().play(rainbow_gen, speed_ms=speed_ms, bt_draw=True, bt_size=8)
+    matrix = load()
+    ctx = matrix.effect_context()
+    return matrix.play(lambda: rainbow_gen(ctx), speed_ms=speed_ms, bt_draw=True, bt_size=matrix.width)
 
 
 def snake(speed_ms:int=30, length:int=6):
-    def _effect_snake():
-        clear_color = (0, 0, 0)
-        total_pixels = 8 * 8
-        total_steps = total_pixels + length  # run just past the end to clear tail
-
-        for step in range(total_steps):
-            # 1) clear the tail pixel once the snake is longer than `length`
-            if step >= length:
-                tail_idx = step - length
-                tx, ty = tail_idx % 8, tail_idx // 8
-                yield tx, ty, clear_color
-
-            # 2) draw the snake segments with decreasing brightness
-            for i in range(length):
-                seg_idx = step - i
-                if 0 <= seg_idx < total_pixels:
-                    x, y = seg_idx % 8, seg_idx // 8
-                    br = 1.0 - (i / length) ** 0.6
-                    r, g, b = NeoPixelMatrix.DEFAULT_COLOR
-                    color = (int(r * br), int(g * br), int(b * br))
-                    yield x, y, color
-
-    return load().play(_effect_snake, speed_ms=speed_ms, bt_draw=False)
+    matrix = load()
+    ctx = matrix.effect_context()
+    return matrix.play(lambda: snake_gen(ctx, length=length), speed_ms=speed_ms, bt_draw=False)
 
 
 def spiral(speed_ms=40):
-    def _effect_spiral(trail=12, hold=6):
-        """
-        Center-out spiral with row-prewarp so the visual is continuous
-        even when set_pixel() applies zigzag=True internally.
-        """
-        try:
-            W = NeoPixelMatrix.INSTANCE.width
-            H = NeoPixelMatrix.INSTANCE.height
-        except:
-            W = H = 8
-
-        # --- build center-out spiral path in true matrix coords (x,y) ---
-        # exact center on odd sizes; upper-left of center 2x2 on even sizes
-        cx = (W // 2 - 1) if (W % 2 == 0) else (W // 2)
-        cy = (H // 2 - 1) if (H % 2 == 0) else (H // 2)
-
-        x, y = cx, cy
-        path, seen = [], set()
-
-        def _add(ax, ay):
-            if 0 <= ax < W and 0 <= ay < H and (ax, ay) not in seen:
-                seen.add((ax, ay))
-                path.append((ax, ay))
-
-        _add(x, y)
-        dirs = ((1, 0), (0, 1), (-1, 0), (0, -1))  # R, D, L, U
-        step_len, d = 1, 0
-        while len(path) < W * H:
-            for _ in range(2):
-                dx, dy = dirs[d & 3]
-                for _ in range(step_len):
-                    x += dx; y += dy
-                    _add(x, y)
-                    if len(path) >= W * H: break
-                d += 1
-                if len(path) >= W * H: break
-            step_len += 1
-
-        # --- PREWARP ---
-        # Cancel the internal zigzag mapping: flip x on odd rows so
-        # set_pixel(zigzag=True) flips it back -> visually linear.
-        def _warp(ax, ay):
-            return (W - 1 - ax, ay) if (ay & 1) else (ax, ay)
-
-        off = (0, 0, 0)
-
-        def _shade(k):
-            r0, g0, b0 = NeoPixelMatrix.DEFAULT_COLOR
-            k = max(0.0, min(1.0, k)) ** 0.9
-            return int(r0 * k), int(g0 * k), int(b0 * k)
-
-        try:
-            NeoPixelMatrix.INSTANCE.clear()
-        except:
-            pass
-
-        # expand with tail
-        for n in range(len(path)):
-            clear_at = n - trail - 1
-            if clear_at >= 0:
-                cx_, cy_ = _warp(*path[clear_at])
-                yield cx_, cy_, off
-
-            start = 0 if n < trail else (n - trail + 1)
-            span = max(1, n - start + 1)
-            for i in range(start, n + 1):
-                k = (i - start + 1) / span
-                px, py = _warp(*path[i])
-                yield px, py, _shade(k)
-
-        # brief hold
-        hx, hy = _warp(*path[-1])
-        for _ in range(hold):
-            yield hx, hy, _shade(1.0)
-
-        # shrink with fading tail
-        for n in range(len(path) - 1, -1, -1):
-            px, py = _warp(*path[n])
-            yield px, py, off
-            start = max(0, n - trail + 1)
-            span = max(1, n - start)
-            for i in range(start, n):
-                k = (i - start + 1) / span
-                qx, qy = _warp(*path[i])
-                yield qx, qy, _shade(k)
-
-    return load().play(_effect_spiral, speed_ms=speed_ms, bt_draw=True, bt_size=8)
+    matrix = load()
+    ctx = matrix.effect_context()
+    return matrix.play(lambda: matrix.clear() or spiral_gen(ctx), speed_ms=speed_ms, bt_draw=True, bt_size=matrix.width)
 
 
 def noise(speed_ms:int=85):
-    def _effect_noise():
-        total_steps = 8 * 8
-        for step in range(total_steps):
-            x, y = step % 8, step // 8
-            r, g, b = NeoPixelMatrix.DEFAULT_COLOR
-            br = float(randint(0, 100) * 0.01)              # Generate random brightness
-            color = (int(r * br), int(g * br), int(b * br))
-            yield x, y, color
-
-    return load().play(_effect_noise, speed_ms=speed_ms, bt_draw=True, bt_size=4)
+    matrix = load()
+    ctx = matrix.effect_context()
+    return matrix.play(lambda: noise_gen(ctx), speed_ms=speed_ms, bt_draw=True, bt_size=max(1, matrix.width // 2))
 
 
 def help(widgets=False):
@@ -399,8 +322,8 @@ def help(widgets=False):
                      'BUTTON rainbow',
                      'BUTTON spiral speed_ms=40',
                      'BUTTON noise speed_ms=85',
+                     'play_file file="animation.json" speed_ms=85',
                      'SLIDER control speed_ms=<1-200> bt_draw=None',
                      'draw_colormap bitmap=[(0,0,(10,2,0)),(x,y,color),...]',
                      'get_colormap',
                      'status'), widgets=widgets)
-

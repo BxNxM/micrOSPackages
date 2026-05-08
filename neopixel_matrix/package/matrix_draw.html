@@ -56,18 +56,22 @@
     <!-- Side panel -->
     <div class="side-panel">
       <!-- Read device state -->
-      <button id="readStateBtn" onclick="getMatrixState()">📥 Read Matrix State</button>
+      <button id="readStateBtn" onclick="getMatrixState()">📥 Read Matrix</button>
+      <button onclick="addReadStateFrame()">➕ Add Frame</button>
       <textarea id="matrixStateOut" rows="4"
         placeholder="Matrix state (original format) will appear here on ONE line…"></textarea>
 
-      <!-- Send Matrix Data -->
-      <h3>📤 Send Matrix Data</h3>
+      <!-- Matrix Frames -->
+      <h3>🎞️ Matrix Frames</h3>
       <textarea id="matrixInput" rows="6"
-        placeholder="Paste like: [(0,0,(131,17,0)), (1,0,(...)), ...]"></textarea>
+        placeholder="One frame per line: [(0,0,(131,17,0)), (1,0,(...)), ...]"></textarea>
       <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-        <button id="sendMatrixBtn" onclick="sendMatrixFromInput()">🚀 Send (batched 15)</button>
+        <button id="sendMatrixBtn" onclick="sendMatrixFromInput()">🚀 Send REST Batches</button>
         <button onclick="applyMatrixInputLocally()">🖌️ Apply Locally</button>
+        <button onclick="copyMatrixInputJson()">📋 Export JSONL Frames</button>
       </div>
+      <textarea id="matrixJsonOut" rows="6" readonly
+        placeholder="Exported JSONL frames will appear here, one frame per line..."></textarea>
       <p id="matrixInputStatus" style="margin:6px auto;color:#9cf;text-align:center"></p>
     </div>
   </div>
@@ -345,6 +349,61 @@
       const parts = cells.map(({x,y,r,g,b}) => `(${x},${y},(${r},${g},${b}))`);
       return `[${parts.join(',')}]`.replace(/\//g, '');
     }
+    function getMatrixCellsFromUI(){
+      const cells = [];
+      document.querySelectorAll('.pixel').forEach(cell => {
+        const x = parseInt(cell.dataset.x, 10);
+        const y = parseInt(cell.dataset.y, 10);
+        const [r, g, b] = hexToRgb(cell.dataset.color || '#000000');
+        cells.push({x, y, r, g, b});
+      });
+      return cells;
+    }
+    function buildJsonFrame(cells){
+      return JSON.stringify(cells.map(({x,y,r,g,b}) => [x, y, [r, g, b]]));
+    }
+    function buildJsonLines(raw){
+      const lines = String(raw || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const sourceLines = lines.length ? lines : [String(raw || '').trim()];
+      const frames = [];
+      let cells = 0;
+      for (const line of sourceLines) {
+        const parsed = parseTuplesRegex(line);
+        if (!parsed) return null;
+        frames.push(buildJsonFrame(parsed));
+        cells += parsed.length;
+      }
+      return { text: frames.join('\n') + '\n', frames: frames.length, cells };
+    }
+    function appendMatrixFrameLine(frameText){
+      const input = document.getElementById('matrixInput');
+      if (!input) return;
+      const normalized = frameText.trim();
+      if (!normalized) return;
+      const lines = input.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (lines[lines.length - 1] === normalized) {
+        setSenderStatus('Frame unchanged. Not added again.');
+        return;
+      }
+      const existing = input.value.trim();
+      input.value = existing ? `${existing}\n${normalized}` : normalized;
+      setSenderStatus(`Added frame ${lines.length + 1}.`);
+    }
+    async function copyTextToClipboard(text){
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
 
     // Make these GLOBAL so inline onclick finds them:
     function applyMatrixInputLocally(){
@@ -355,6 +414,14 @@
       setSenderStatus(`Applied ${parsed.length} cells locally.`);
     }
 
+    function addReadStateFrame(){
+      const raw = (document.getElementById('matrixStateOut')?.value || '').trim();
+      const uiFrame = getMatrixCellsFromUI();
+      const parsed = uiFrame.length ? uiFrame : parseTuplesRegex(raw);
+      if (!parsed || !parsed.length) { setSenderStatus('Could not add frame.', true); return; }
+      appendMatrixFrameLine(buildPayload(parsed));
+    }
+
     function sendMatrixFromInput(){
       const btn = document.getElementById('sendMatrixBtn');
       const raw = (document.getElementById('matrixInput')?.value || '').trim();
@@ -362,7 +429,7 @@
       if (!parsed) { setSenderStatus('Could not parse input. Use [(x,y,(r,g,b)), ...]', true); return; }
 
       if (btn) btn.disabled = true;
-      setSenderStatus(`Sending ${parsed.length} cells in batches of 15…`);
+      setSenderStatus(`Sending current input as REST batches (${parsed.length} cells)…`);
 
       // Update UI immediately for responsiveness
       applyCellsToUI(parsed);
@@ -381,9 +448,31 @@
       if (btn) btn.disabled = false;
     }
 
+    async function copyMatrixInputJson(){
+      const raw = (document.getElementById('matrixInput')?.value || '').trim();
+      const exported = buildJsonLines(raw);
+      if (!exported) { setSenderStatus('Could not export. Use one tuple-list frame per line.', true); return; }
+      const out = document.getElementById('matrixJsonOut');
+      let json = exported.text;
+      if (out) {
+        const existing = out.value.trim();
+        out.value = existing ? `${existing}\n${json}` : json;
+        json = out.value.endsWith('\n') ? out.value : `${out.value}\n`;
+        out.select();
+      }
+      try {
+        await copyTextToClipboard(json);
+        setSenderStatus(`Exported ${exported.frames} JSONL frame(s), ${exported.cells} cells total. Copied.`);
+      } catch (e) {
+        setSenderStatus('Clipboard blocked. JSONL frames are shown and selected.', true);
+      }
+    }
+
     // Expose on window explicitly (paranoia, but harmless)
     window.applyMatrixInputLocally = applyMatrixInputLocally;
+    window.addReadStateFrame = addReadStateFrame;
     window.sendMatrixFromInput = sendMatrixFromInput;
+    window.copyMatrixInputJson = copyMatrixInputJson;
   </script>
   <!-- === END sender === -->
 </body>

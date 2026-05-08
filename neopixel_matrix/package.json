@@ -1,5 +1,5 @@
 {
-    "version": "0.0.2",
+    "version": "0.0.3",
     "urls": [
         [
             "neopixel_matrix/effects.py",
@@ -8,6 +8,10 @@
         [
             "neopixel_matrix/matrix_draw.html",
             "github:BxNxM/micrOSPackages/neopixel_matrix/package/matrix_draw.html"
+        ],
+        [
+            "neopixel_matrix/file_player.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/file_player.py"
         ],
         [
             "neopixel_matrix/__init__.py",
