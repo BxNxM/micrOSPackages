@@ -3,15 +3,15 @@
     "urls": [
         [
             "blinky_example/__init__.py",
-            "github:BxNxM/micrOSPackages/blinky_example/package/__init__.py"
+            "github:fmandl/micrOSPackages/blinky_example/package/__init__.py"
         ],
         [
             "LM_blinky.py",
-            "github:BxNxM/micrOSPackages/blinky_example/package/LM_blinky.py"
+            "github:fmandl/micrOSPackages/blinky_example/package/LM_blinky.py"
         ],
         [
             "blinky_example/pacman.json",
-            "github:BxNxM/micrOSPackages/blinky_example/package/pacman.json"
+            "github:fmandl/micrOSPackages/blinky_example/package/pacman.json"
         ]
     ],
     "deps": []
