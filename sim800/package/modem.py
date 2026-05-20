@@ -224,8 +224,16 @@ class Sim800:
             return result
         try:
             result['sign'], rest = msg.split(':', 1)
-            header, body = rest.strip().split('\r\n')
-            status, alpha, length = header.split(',')
+            parts = rest.strip().split('\r\n', 1)
+            if len(parts) < 2:
+                console(f"parse_sms: no header/body separator in response")
+                return result
+            header, body = parts
+            hparts = header.split(',')
+            if len(hparts) < 3:
+                console(f"parse_sms: incomplete header: {header}")
+                return result
+            status, alpha, length = hparts[0], hparts[1], hparts[2]
             result['status'] = SMS_STATUS[status]
             result['alpha'] = alpha.strip('"')
             result['length'] = length
