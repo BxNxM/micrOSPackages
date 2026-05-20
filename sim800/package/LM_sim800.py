@@ -241,19 +241,12 @@ def _poll_uart():
 async def _run_listener():
     with micro_task(tag='sim800.listener') as my_task:
         inst = Sim800.INSTANCE
-        poll_counter = 0
         while _has_subscribers():
             try:
                 if inst._ri_triggered:
                     inst._ri_triggered = False
                     await my_task.feed(sleep_ms=50)
                     _poll_uart()
-                    poll_counter = 0
-                else:
-                    poll_counter += 1
-                    if poll_counter >= 10:
-                        _poll_uart()
-                        poll_counter = 0
                 await my_task.feed(sleep_ms=100)
             except Exception as e:
                 console(f"Listener error: {e}")
