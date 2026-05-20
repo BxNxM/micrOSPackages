@@ -5,7 +5,7 @@ Distributed alarm system for micrOS devices. Manages zones, state machine, and a
 ## Install
 
 ```bash
-pacman install "github:fmandl/micrOSPackages/alarm_system"
+pacman install "github:BxNxM/micrOSPackages/alarm_system"
 ```
 
 ```bash
@@ -181,8 +181,8 @@ alarm_system add_watch topic="shelly/door/state" zone="door" trigger_value="open
 
 Auto-installed via `mip` based on `package.json`:
 ```
-github:fmandl/micrOSPackages/sim800
-github:fmandl/micrOSPackages/phone_manager
+github:BxNxM/micrOSPackages/sim800
+github:BxNxM/micrOSPackages/phone_manager
 ```
 
 ## Tests

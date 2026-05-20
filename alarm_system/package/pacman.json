@@ -3,7 +3,7 @@
         "packager": "0.1.0",
         "package": "2.0.0"
     },
-    "url": "github:fmandl/micrOSPackages/alarm_system",
+    "url": "github:BxNxM/micrOSPackages/alarm_system",
     "layout": {
         "/modules": [
             "LM_alarm_system.py"
