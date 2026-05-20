@@ -226,7 +226,6 @@ class Sim800:
             result['sign'], rest = msg.split(':', 1)
             parts = rest.strip().split('\r\n', 1)
             if len(parts) < 2:
-                console(f"parse_sms: no separator in: {msg[:80]}")
                 return result
             header, body = parts
             hparts = header.split(',')
@@ -282,7 +281,6 @@ class Sim800:
         """
         raw = self.read_sms(index)
         if b'ERROR' in raw:
-            console(f"receive_sms: error reading index {index}: {raw}")
             return {}
         sms = self.parse_sms(raw)
         if not sms:
@@ -314,6 +312,10 @@ class Sim800:
         """Reject an incoming call."""
         if busy:
             return self.send_command('AT+GSMBUSY=1')
+        # Flush pending RING/CLIP data before sending ATH
+        time.sleep(0.3)
+        if self.uart.any():
+            self.uart.read(self.uart.any())
         return self.send_command('ATH')
 
     async def make_call(self, number, ring_time=None):

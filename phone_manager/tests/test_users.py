@@ -28,9 +28,21 @@ def _load_users_module():
         stub = _t.ModuleType("Common")
         sys.modules["Common"] = stub
     sys.modules["Common"].data_dir = lambda f_name=None: f_name if f_name else '.'
+    # Load manager.py first so phone_manager.manager is available
+    mgr_spec = importlib.util.spec_from_file_location("phone_manager.manager", str(GARAGE_DIR / "manager.py"))
+    mgr_mod = importlib.util.module_from_spec(mgr_spec)
+    pkg = _t.ModuleType("phone_manager")
+    pkg.__path__ = [str(GARAGE_DIR)]
+    sys.modules["phone_manager"] = pkg
+    sys.modules["phone_manager.manager"] = mgr_mod
+    mgr_spec.loader.exec_module(mgr_mod)
+    # Now load LM_users.py
     spec = importlib.util.spec_from_file_location("LM_users_real", str(GARAGE_DIR / "LM_users.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    # Expose data_dir on module for test patching
+    mod.data_dir = sys.modules["Common"].data_dir
+    mod._mgr_mod = mgr_mod
     return mod
 
 
@@ -697,7 +709,8 @@ class TestMultiPhonebook(unittest.TestCase):
         um_mod.UserManagement.INSTANCES = {}
         self.tmpdir = tempfile.mkdtemp()
         # Patch data_dir at module level (from Common import data_dir binds early)
-        um_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
+        sys.modules["Common"].data_dir = lambda f: os.path.join(self.tmpdir, f)
+        um_mod._mgr_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
 
     def tearDown(self):
         um_mod.UserManagement.INSTANCES = {}
@@ -773,7 +786,8 @@ class TestDailyTimeWindow(unittest.TestCase):
     def setUp(self):
         um_mod.UserManagement.INSTANCES = {}
         self.tmpdir = tempfile.mkdtemp()
-        um_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
+        sys.modules["Common"].data_dir = lambda f: os.path.join(self.tmpdir, f)
+        um_mod._mgr_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
         um_mod.load('daily_test.json', book='daily')
 
     def tearDown(self):
