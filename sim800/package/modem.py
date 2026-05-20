@@ -226,7 +226,7 @@ class Sim800:
             result['sign'], rest = msg.split(':', 1)
             parts = rest.strip().split('\r\n', 1)
             if len(parts) < 2:
-                console(f"parse_sms: no header/body separator in response")
+                console(f"parse_sms: no separator in: {msg[:80]}")
                 return result
             header, body = parts
             hparts = header.split(',')
