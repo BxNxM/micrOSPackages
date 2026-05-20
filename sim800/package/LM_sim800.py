@@ -221,9 +221,12 @@ def _poll_uart():
                 index = int(value.split(',')[1].strip())
             except (IndexError, ValueError):
                 continue
+            console(f"CMTI index={index}")
             sms = receive_sms(index)
             if sms is None:
                 console("Multipart SMS part received, waiting for more...")
+            elif not sms:
+                console(f"SMS read failed for index {index}")
             else:
                 _dispatch('sms', sms)
                 dispatched = True

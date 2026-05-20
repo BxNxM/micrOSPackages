@@ -278,12 +278,15 @@ class Sim800:
 
     def receive_sms(self, index, delete=True):
         """Read, parse and reassemble a (possibly multipart) SMS by SIM index.
-        :return dict|None: complete SMS dict or None if still waiting for more parts
+        :return dict|None|{}: complete SMS dict, None if waiting for more parts, {} on error
         """
         raw = self.read_sms(index)
+        if b'ERROR' in raw:
+            console(f"receive_sms: error reading index {index}: {raw}")
+            return {}
         sms = self.parse_sms(raw)
         if not sms:
-            return None
+            return {}
         udh = sms.pop('udh', None)
         if udh is None:
             if delete:
