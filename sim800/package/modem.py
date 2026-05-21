@@ -280,7 +280,7 @@ class Sim800:
         :return dict|None|{}: complete SMS dict, None if waiting for more parts, {} on error
         """
         raw = self.read_sms(index)
-        if b'ERROR' in raw:
+        if not raw or b'ERROR' in raw:
             return {}
         sms = self.parse_sms(raw)
         if not sms:
