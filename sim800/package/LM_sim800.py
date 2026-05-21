@@ -211,6 +211,7 @@ def _poll_uart():
     uart_lines, raw_bytes = result
     if uart_lines is None:
         return False
+    console(f"UART: {uart_lines}")
     dispatched = False
     for value in uart_lines:
         if '+CLIP' in value:
