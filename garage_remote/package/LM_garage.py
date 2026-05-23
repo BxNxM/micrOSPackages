@@ -12,7 +12,7 @@ from Types import resolve
 _BOOK = 'garage'
 
 # Alarm session management
-MAX_ALARM_MINUTES = 30
+MAX_ALARM_MINUTES = 60
 ALARM_CHUNK_MINUTES = 7
 _alarm_sessions = {}
 _alarm_observer_task = None
