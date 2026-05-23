@@ -224,8 +224,15 @@ class Sim800:
             return result
         try:
             result['sign'], rest = msg.split(':', 1)
-            header, body = rest.strip().split('\r\n')
-            status, alpha, length = header.split(',')
+            parts = rest.strip().split('\r\n', 1)
+            if len(parts) < 2:
+                return result
+            header, body = parts
+            hparts = header.split(',')
+            if len(hparts) < 3:
+                console(f"parse_sms: incomplete header: {header}")
+                return result
+            status, alpha, length = hparts[0], hparts[1], hparts[2]
             result['status'] = SMS_STATUS[status]
             result['alpha'] = alpha.strip('"')
             result['length'] = length
@@ -270,12 +277,14 @@ class Sim800:
 
     def receive_sms(self, index, delete=True):
         """Read, parse and reassemble a (possibly multipart) SMS by SIM index.
-        :return dict|None: complete SMS dict or None if still waiting for more parts
+        :return dict|None|{}: complete SMS dict, None if waiting for more parts, {} on error
         """
         raw = self.read_sms(index)
+        if not raw or b'ERROR' in raw:
+            return {}
         sms = self.parse_sms(raw)
         if not sms:
-            return None
+            return {}
         udh = sms.pop('udh', None)
         if udh is None:
             if delete:
@@ -303,6 +312,10 @@ class Sim800:
         """Reject an incoming call."""
         if busy:
             return self.send_command('AT+GSMBUSY=1')
+        # Flush pending RING/CLIP data before sending ATH
+        time.sleep(0.3)
+        if self.uart.any():
+            self.uart.read(self.uart.any())
         return self.send_command('ATH')
 
     async def make_call(self, number, ring_time=None):
