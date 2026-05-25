@@ -3,7 +3,7 @@
         "packager": "0.1.0",
         "package": "0.0.3"
     },
-    "url": "github:BxNxM/micrOSPackages/neopixel_matrix",
+    "url": "github:fmandl/micrOSPackages/neopixel_matrix",
     "layout": {
         "/modules": [
             "LM_neomatrix.py"

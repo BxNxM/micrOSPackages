@@ -3,7 +3,7 @@
         "packager": "0.1.0",
         "package": "0.0.2"
     },
-    "url": "github:BxNxM/micrOSPackages/async_mqtt",
+    "url": "github:fmandl/micrOSPackages/async_mqtt",
     "layout": {
         "/modules": [
             "LM_mqtt_client.py"

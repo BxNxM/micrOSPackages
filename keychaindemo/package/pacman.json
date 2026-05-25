@@ -3,7 +3,7 @@
         "packager": "0.1.0",
         "package": "0.0.1"
     },
-    "url": "github:BxNxM/micrOSPackages/keychaindemo",
+    "url": "github:fmandl/micrOSPackages/keychaindemo",
     "layout": {
         "/modules": [
             "LM_keychain.py"
