@@ -20,7 +20,7 @@ class DebouncedInput:
     Default: active-low (0=triggered, 1=reset). Use invert=True for NC sensors.
     """
 
-    def __init__(self, pin_number, name, callback=None, invert=False):
+    def __init__(self, pin_number, name, callback=None, invert=True):
         """Initialize debounced input.
         :param pin_number int: GPIO pin number
         :param name str: sensor name (used in notifications)

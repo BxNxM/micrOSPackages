@@ -96,10 +96,15 @@ def get_watches_config():
     """Return watches in config-saveable format.
     :return list: watch dicts
     """
-    return [{'topic': w['topic'], 'zone': w['zone'], 'trigger_value': w['trigger_value'],
-             'trigger_field': w.get('trigger_field'),
-             **({'reset_value': w['reset_value']} if 'reset_value' in w else {})}
-            for w in _watches]
+    result = []
+    for w in _watches:
+        entry = {'topic': w['topic'], 'zone': w['zone'],
+                 'trigger_value': w['trigger_value'],
+                 'trigger_field': w.get('trigger_field')}
+        if 'reset_value' in w:
+            entry['reset_value'] = w['reset_value']
+        result.append(entry)
+    return result
 
 
 def _on_message(topic, payload):

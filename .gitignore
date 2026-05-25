@@ -2,3 +2,4 @@
 **__pycache__/
 _tools/cache/
 unpacked
+alarm_system/tests/reports/

@@ -10,37 +10,37 @@ from Notify import Notify
 
 def on_arming():
     """Exit delay started. Notify remote devices: buzzer slow beep."""
-    Notify.notify(json.dumps({"action": "buzzer_slow"}), topic="alarm/action")
+    Notify.notify(json.dumps({"action": "buzzer_slow"}), topic="alarm/action/dispatch")
 
 
 def on_armed():
     """System armed. Notify remote devices: buzzer stop, LED red."""
-    Notify.notify(json.dumps({"action": "buzzer_stop"}), topic="alarm/action")
-    Notify.notify(json.dumps({"action": "led_red"}), topic="alarm/action")
+    Notify.notify(json.dumps({"action": "buzzer_stop"}), topic="alarm/action/dispatch")
+    Notify.notify(json.dumps({"action": "led_red"}), topic="alarm/action/dispatch")
 
 
 def on_entry_delay():
     """Entry delay started. Notify remote devices: buzzer fast beep."""
-    Notify.notify(json.dumps({"action": "buzzer_fast"}), topic="alarm/action")
+    Notify.notify(json.dumps({"action": "buzzer_fast"}), topic="alarm/action/dispatch")
 
 
 def on_alarm(alarm_memory):
     """Alarm triggered. Notify remote devices: siren on. Send SMS to admins.
     :param alarm_memory list: zones that caused the alarm
     """
-    Notify.notify(json.dumps({"action": "siren_on"}), topic="alarm/action")
+    Notify.notify(json.dumps({"action": "siren_on"}), topic="alarm/action/dispatch")
     _notify_admins_sms(alarm_memory)
 
 
 def on_disarmed():
     """System disarmed. Notify remote devices: all stop, LED green."""
-    Notify.notify(json.dumps({"action": "all_stop"}), topic="alarm/action")
-    Notify.notify(json.dumps({"action": "led_green"}), topic="alarm/action")
+    Notify.notify(json.dumps({"action": "all_stop"}), topic="alarm/action/dispatch")
+    Notify.notify(json.dumps({"action": "led_green"}), topic="alarm/action/dispatch")
 
 
 def on_silent_alert(zone_name):
     """24h zone triggered while disarmed. Notify only, no siren."""
-    Notify.notify(json.dumps({"alert": zone_name, "type": "silent"}), topic="alarm/action")
+    Notify.notify(json.dumps({"alert": zone_name, "type": "silent"}), topic="alarm/action/dispatch")
 
 
 def _notify_admins_sms(alarm_memory):
