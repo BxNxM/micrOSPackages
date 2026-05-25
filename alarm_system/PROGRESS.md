@@ -63,7 +63,7 @@
 - 24 integration tests passing
 
 ### 6. ✅ Package creation (micrOSPackages)
-- Package pushed to https://github.com/BxNxM/micrOSPackages/tree/main/alarm_system
+- Package pushed to https://github.com/fmandl/micrOSPackages/tree/main/alarm_system
 - package.json with deps (sim800, phone_manager)
 - pacman.json with layout (/modules/LM_alarm_system.py + /lib/alarm_system/)
 - README.md with full documentation

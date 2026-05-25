@@ -5,7 +5,7 @@
 ### 1. Install the package
 
 ```commandline
-pacman install "github:BxNxM/micrOSPackages/alarm_system"
+pacman install "github:fmandl/micrOSPackages/alarm_system"
 ```
 
 ### 2. Start the system

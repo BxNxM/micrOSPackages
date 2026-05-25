@@ -5,7 +5,7 @@ Compact demo package for an ESP32-C3 keychain device with OLED status display, D
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/keychaindemo"
+pacman install "github:fmandl/micrOSPackages/keychaindemo"
 ```
 
 ```bash

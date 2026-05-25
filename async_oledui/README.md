@@ -5,7 +5,7 @@ Async OLED UI framework for micrOS. It provides page rendering, cursor control, 
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/async_oledui"
+pacman install "github:fmandl/micrOSPackages/async_oledui"
 ```
 
 ```bash

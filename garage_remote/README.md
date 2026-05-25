@@ -5,7 +5,7 @@ Smart garage remote control for micrOS devices. Controls a garage door opener an
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/garage_remote"
+pacman install "github:fmandl/micrOSPackages/garage_remote"
 ```
 
 ```bash
@@ -97,8 +97,8 @@ The observer checks every 10 seconds and presses the button when `remaining % ch
 Dependencies are auto-installed by `mip` based on `package.json`:
 
 ```text
-github:BxNxM/micrOSPackages/sim800
-github:BxNxM/micrOSPackages/phone_manager
+github:fmandl/micrOSPackages/sim800
+github:fmandl/micrOSPackages/phone_manager
 ```
 
 ## Tests

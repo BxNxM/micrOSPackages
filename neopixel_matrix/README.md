@@ -5,7 +5,7 @@ NeoPixel matrix package with pixel addressing, brightness control, animation hel
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/neopixel_matrix"
+pacman install "github:fmandl/micrOSPackages/neopixel_matrix"
 pacman upgrade "neopixel_matrix"
 pacman uninstall "neopixel_matrix"
 ```

@@ -7,7 +7,7 @@ Async MQTT client for micrOS devices. It connects to a broker, subscribes to dev
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/async_mqtt"
+pacman install "github:fmandl/micrOSPackages/async_mqtt"
 ```
 
 ```bash

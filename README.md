@@ -255,13 +255,13 @@ Starting server...
 
 ```python
 import mip
-mip.install("github:BxNxM/micrOSPackages/blinky_example")
+mip.install("github:fmandl/micrOSPackages/blinky_example")
 ```
 
 ## From Shell
 
 ```bash
-pacman install "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_example"
+pacman install "https://github.com/fmandl/micrOSPackages/blob/main/blinky_example"
 ```
 
 ---

@@ -5,7 +5,7 @@ Minimal micrOS example package for controlling a single LED from the shell or we
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/blinky_example"
+pacman install "github:fmandl/micrOSPackages/blinky_example"
 ```
 
 ```bash

@@ -5,7 +5,7 @@ Phone number-based user management and access control for micrOS devices. Provid
 ## Install
 
 ```bash
-pacman install "github:BxNxM/micrOSPackages/phone_manager"
+pacman install "github:fmandl/micrOSPackages/phone_manager"
 ```
 
 ```bash
