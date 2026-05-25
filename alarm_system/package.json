@@ -1,38 +1,31 @@
 {
-    "version": "2.0.0",
+    "version": "1.0.0",
     "urls": [
         [
             "alarm_system/__init__.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/__init__.py"
-        ],
-        [
-            "alarm_system/door_sensor.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/door_sensor.py"
-        ],
-        [
-            "alarm_system/event_log.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/event_log.py"
-        ],
-        [
-            "alarm_system/actions.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/actions.py"
-        ],
-        [
-            "alarm_system/mqtt_watcher.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/mqtt_watcher.py"
-        ],
-        [
-            "alarm_system/sms_handler.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/alarm_system/sms_handler.py"
-        ],
-        [
-            "alarm_system/pacman.json",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/pacman.json"
+            "github:BxNxM/micrOSPackages/alarm_system/package/__init__.py"
         ],
         [
             "LM_alarm_system.py",
-            "github:fmandl/micrOSPackages/main/alarm_system/package/LM_alarm_system.py"
+            "github:BxNxM/micrOSPackages/alarm_system/package/LM_alarm_system.py"
+        ],
+        [
+            "alarm_system/door_sensor.py",
+            "github:BxNxM/micrOSPackages/alarm_system/package/alarm_system/door_sensor.py"
+        ],
+        [
+            "alarm_system/pacman.json",
+            "github:BxNxM/micrOSPackages/alarm_system/package/pacman.json"
         ]
     ],
-    "deps": []
+    "deps": [
+        [
+            "github:BxNxM/micrOSPackages/sim800",
+            "master"
+        ],
+        [
+            "github:BxNxM/micrOSPackages/phone_manager",
+            "master"
+        ]
+    ]
 }
