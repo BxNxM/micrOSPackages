@@ -54,6 +54,8 @@ def _save_config():
         entry = {'name': name, 'type': z['type'], 'group': z['group']}
         if 'pin' in z:
             entry['pin'] = z['pin']
+            if z.get('invert'):
+                entry['invert'] = True
             sensors.append(entry)
         else:
             if z['type'] == 'cross':
@@ -206,7 +208,7 @@ def load(config='alarm_config.json'):
         _max_log_entries = cfg.get('max_log_entries', 100)
         # Create sensors from config
         for s in cfg.get('sensors', []):
-            _create_sensor(s['name'], s['pin'], s['type'], s['group'])
+            _create_sensor(s['name'], s['pin'], s['type'], s['group'], s.get('invert', False))
         # Register remote zones from config
         for z in cfg.get('zones', []):
             zone = {'type': z['type'], 'group': z['group'], 'last_event': 'ok'}
@@ -447,24 +449,26 @@ def zone_trigger(name, event):
 
 # --- Sensor management ---
 
-def _create_sensor(name, pin, type, group):
+def _create_sensor(name, pin, type, group, invert=False):
     """Create a DebouncedInput sensor and register as zone.
     :param name str: sensor/zone name
     :param pin int: GPIO pin number
     :param type str: 'delayed', 'instant', or '24h'
     :param group str: 'perimeter', 'interior', or 'always'
+    :param invert bool: True for NC sensors
     """
     from alarm_system.door_sensor import DebouncedInput
-    sensor = DebouncedInput(pin, name, callback=zone_trigger)
-    _zones[name] = {'type': type, 'group': group, 'last_event': 'ok', 'pin': pin, 'sensor': sensor}
+    sensor = DebouncedInput(pin, name, callback=zone_trigger, invert=invert)
+    _zones[name] = {'type': type, 'group': group, 'last_event': 'ok', 'pin': pin, 'invert': invert, 'sensor': sensor}
 
 
-def add_sensor(name, pin, type='delayed', group='perimeter'):
+def add_sensor(name, pin, type='delayed', group='perimeter', invert=False):
     """Add a local GPIO sensor. Creates DebouncedInput and saves to config.
     :param name str: sensor name
     :param pin int: GPIO pin number
     :param type str: 'delayed', 'instant', or '24h'
     :param group str: 'perimeter', 'interior', or 'always'
+    :param invert bool: True for NC sensors (closed=normal, open=triggered)
     :return str: status message
     """
     if name in _zones:
@@ -473,9 +477,9 @@ def add_sensor(name, pin, type='delayed', group='perimeter'):
         return f"Invalid type '{type}'. Must be one of: {', '.join(VALID_TYPES)}"
     if group not in VALID_GROUPS:
         return f"Invalid group '{group}'. Must be one of: {', '.join(VALID_GROUPS)}"
-    _create_sensor(name, pin, type, group)
+    _create_sensor(name, pin, type, group, invert)
     _save_config()
-    return f"Sensor '{name}' added: pin={pin}, type={type}, group={group}"
+    return f"Sensor '{name}' added: pin={pin}, type={type}, group={group}, invert={invert}"
 
 
 def remove_sensor(name):

@@ -17,26 +17,33 @@ RESCUE_MS = 1000
 
 class DebouncedInput:
     """Debounced GPIO input with IRQ-driven detection and rescue polling.
-    Uses active-low logic: 0 = triggered (closed contact), 1 = reset (open contact).
+    Default: active-low (0=triggered, 1=reset). Use invert=True for NC sensors.
     """
 
-    def __init__(self, pin_number, name, callback=None):
+    def __init__(self, pin_number, name, callback=None, invert=False):
         """Initialize debounced input.
         :param pin_number int: GPIO pin number
         :param name str: sensor name (used in notifications)
         :param callback func|None: called with (name, event) on state change
+        :param invert bool: True for NC sensors (1=triggered, 0=reset)
         """
         self.pin = Pin(bind_pin(f"alarm_{name}", pin_number), Pin.IN, Pin.PULL_UP)
         self.name = name
         self.callback = callback
+        self.invert = invert
         self.last_irq_time = 0
 
-        self.last_reported_state = self.pin.value()
+        self.last_reported_state = self._read()
         self.tentative_state = self.last_reported_state
         self.tentative_time = 0
         self.event = False
 
         self.pin.irq(trigger=Pin.IRQ_FALLING | Pin.IRQ_RISING, handler=self._irq_handler)
+
+    def _read(self):
+        """Read pin value, applying invert if needed."""
+        v = self.pin.value()
+        return 1 - v if self.invert else v
 
     def _irq_handler(self, pin):
         """IRQ handler — debounces and stores tentative state change."""
@@ -44,7 +51,8 @@ class DebouncedInput:
         if time.ticks_diff(now, self.last_irq_time) < DEBOUNCE_MS:
             return
         self.last_irq_time = now
-        self.tentative_state = pin.value()
+        v = pin.value()
+        self.tentative_state = 1 - v if self.invert else v
         self.tentative_time = now
         self.event = True
 
@@ -73,7 +81,7 @@ class DebouncedInput:
         if age < CONFIRM_MS:
             return
 
-        current = self.pin.value()
+        current = self._read()
         if current != self.tentative_state:
             self.event = False
             self.tentative_state = None
@@ -90,7 +98,7 @@ class DebouncedInput:
         Forces report after RESCUE_MS without IRQ activity.
         """
         now = time.ticks_ms()
-        current = self.pin.value()
+        current = self._read()
 
         if current == self.last_reported_state:
             self.tentative_state = None
