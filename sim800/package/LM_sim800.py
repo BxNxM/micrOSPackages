@@ -223,7 +223,9 @@ def _poll_uart():
                 continue
             sms = receive_sms(index)
             if sms is None:
-                console("Multipart SMS part received, waiting for more...")
+                pass  # Multipart SMS, waiting for more parts
+            elif not sms:
+                pass  # Read error (invalid index etc.)
             else:
                 _dispatch('sms', sms)
                 dispatched = True

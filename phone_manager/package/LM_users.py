@@ -2,119 +2,70 @@ from Types import resolve
 from phone_manager.manager import UserManagement
 
 
-def load(json_file='users.json'):
+def load(json_file='users.json', book='default'):
     """
-    Initialize the UserManagement module.
+    Initialize a named phonebook instance.
     :param json_file str: JSON filename stored in data_dir (default: users.json)
+    :param book str: phonebook name (default: 'default')
     :return str: status message
     """
-    if UserManagement.INSTANCE is None:
-        UserManagement.INSTANCE = UserManagement(json_file)
-        return 'UserManagement started.'
-    return 'UserManagement already running.'
+    if book not in UserManagement.INSTANCES:
+        UserManagement.INSTANCES[book] = UserManagement(json_file)
+        return f"UserManagement '{book}' started."
+    return f"UserManagement '{book}' already running."
 
-def add_user(phone, name, status='A', role='user', info='', valid_from='', expires=''):
-    """
-    Add a new user.
-    :param phone str: phone number (unique identifier)
-    :param name str: display name
-    :param status str: 'A' (active) or 'B' (blocked)
-    :param role str: 'user' or 'admin'
-    :param info str: additional info
-    :param valid_from str: start datetime 'YYYY-MM-DDTHH:MM' or '' for immediate
-    :param expires str: end datetime 'YYYY-MM-DDTHH:MM' or '' for no expiry
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.add_user(phone, name, status, role, info, valid_from, expires)
 
-def modify_user(phone, **kwargs):
-    """
-    Modify an existing user's fields.
-    :param phone str: phone number of user to modify
-    :param kwargs: field=value pairs to update
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.modify_user(phone, **kwargs)
+def _get(book='default'):
+    """Get a phonebook instance by name."""
+    inst = UserManagement.INSTANCES.get(book)
+    if inst is None:
+        raise RuntimeError(f"Phonebook '{book}' not loaded. Call load() first.")
+    return inst
 
-def delete_user(phone):
-    """
-    Delete a user by phone number.
-    :param phone str: phone number of user to delete
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.delete_user(phone)
+def add_user(phone, name, status='A', role='user', info='', valid_from='', expires='', daily_from='', daily_to='', book='default'):
+    return _get(book).add_user(phone, name, status, role, info, valid_from, expires, daily_from, daily_to)
 
-def get_user(**kwargs):
-    """
-    Find users matching all given field=value criteria.
-    :param kwargs: field=value pairs to match
-    :return list|None: list of matching user dicts, or None
-    """
-    return UserManagement.INSTANCE.get_user(**kwargs)
+def modify_user(phone, book='default', **kwargs):
+    return _get(book).modify_user(phone, **kwargs)
 
-def get_all_users():
-    """
-    Return all users.
-    :return list: list of user dicts
-    """
-    return UserManagement.INSTANCE.get_all_users()
+def delete_user(phone, book='default'):
+    return _get(book).delete_user(phone)
 
-def count_users():
-    """
-    Return number of users.
-    :return int: user count
-    """
-    return UserManagement.INSTANCE.count_users()
+def get_user(book='default', **kwargs):
+    return _get(book).get_user(**kwargs)
 
-def export_users(file='users_backup.json'):
-    """
-    Export users to a backup file.
-    :param file str: backup filename
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.export_users(file)
+def get_all_users(book='default'):
+    return _get(book).get_all_users()
 
-def import_users(data=None, file=None, mode='replace'):
-    """
-    Import users from JSON string or backup file.
-    :param data str|None: JSON string (from get_all_users output)
-    :param file str|None: backup filename
-    :param mode str: 'replace' or 'merge'
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.import_users(data, file, mode)
+def count_users(book='default'):
+    return _get(book).count_users()
 
-def check_access(phone):
-    """
-    Check if a user's access is currently valid.
-    :param phone str: phone number to check
-    :return bool: True if access denied (inactive)
-    """
-    return UserManagement.INSTANCE.check_access(phone)
+def export_users(file='users_backup.json', book='default'):
+    return _get(book).export_users(file)
 
-def grant_access(phone, valid_from='', expires=''):
-    """
-    Grant or extend access for an existing user.
-    :param phone str: phone number
-    :param valid_from str: start datetime 'YYYY-MM-DDTHH:MM' or '' for immediate
-    :param expires str: end datetime 'YYYY-MM-DDTHH:MM' or '' for no expiry
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.grant_access(phone, valid_from, expires)
+def import_users(data=None, file=None, mode='replace', book='default'):
+    return _get(book).import_users(data, file, mode)
 
-def get_inactive_users():
-    """
-    Return all users whose access is not currently valid.
-    :return list: list of inactive user dicts
-    """
-    return UserManagement.INSTANCE.get_inactive_users()
+def check_access(phone, book='default'):
+    return _get(book).check_access(phone)
 
-def clear_users():
-    """
-    Delete all users.
-    :return str: success or error message
-    """
-    return UserManagement.INSTANCE.clear_users()
+def grant_access(phone, valid_from='', expires='', book='default'):
+    return _get(book).grant_access(phone, valid_from, expires)
+
+def get_inactive_users(book='default'):
+    return _get(book).get_inactive_users()
+
+def clear_users(book='default'):
+    return _get(book).clear_users()
+
+def unload(book='default'):
+    if book in UserManagement.INSTANCES:
+        del UserManagement.INSTANCES[book]
+        return f"UserManagement '{book}' stopped."
+    return f"UserManagement '{book}' not loaded."
+
+def list_books():
+    return list(UserManagement.INSTANCES.keys())
 
 
 #######################
@@ -122,24 +73,20 @@ def clear_users():
 #######################
 
 def help(widgets=False):
-    """
-    [i] micrOS LM naming convention - built-in help message
-    :return tuple:
-        (widgets=False) list of functions implemented by this application
-        (widgets=True) list of widget json for UI generation
-    """
-    return resolve(('load json_file=users.json',
-                    'add_user phone="+36202002000" name="John Doe" status="A" role="user" info="apartment 21"',
-                    'modify_user phone="+36202002000" status="B"',
-                    'modify_user phone="+36202002000" new_phone="+36203003000"',
-                    'delete_user phone="+36202002000"',
-                    'get_user name="John Doe"',
-                    'BUTTON{"result": true} get_all_users',
-                    'BUTTON{"result": true} count_users',
-                    'export_users file="users_backup.json"',
-                    'import_users data="[...]" mode="replace"',
-                    'import_users file="users_backup.json" mode="merge"',
-                    'grant_access phone="+36202002000" valid_from="2026-05-10T12:00" expires="2026-06-13T20:00"',
-                    'check_access phone="+36202002000"',
-                    'BUTTON{"result": true} get_inactive_users',
-                    'clear_users'), widgets=widgets)
+    """[i] micrOS LM naming convention - built-in help message"""
+    return resolve(('load json_file="users.json" book="default"',
+                    'load json_file="garage_users.json" book="garage"',
+                    'add_user phone="+36202002000" name="John Doe" status="A" role="user" book="default"',
+                    'modify_user phone="+36202002000" status="B" book="default"',
+                    'delete_user phone="+36202002000" book="default"',
+                    'get_user name="John Doe" book="default"',
+                    'get_all_users book="default"',
+                    'count_users book="default"',
+                    'export_users file="users_backup.json" book="default"',
+                    'import_users file="users_backup.json" mode="merge" book="default"',
+                    'grant_access phone="+36202002000" valid_from="2026-05-10T12:00" expires="2026-06-13T20:00" book="default"',
+                    'check_access phone="+36202002000" book="default"',
+                    'get_inactive_users book="default"',
+                    'clear_users book="default"',
+                    'unload book="default"',
+                    'list_books'), widgets=widgets)

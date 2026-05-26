@@ -8,13 +8,14 @@ Run:
 
 import unittest
 import sys
+from unittest import mock
 import os
 import time
 import tempfile
 import importlib.util
 from pathlib import Path
 
-PACKAGE_DIR = Path(__file__).resolve().parent.parent / "package"
+GARAGE_DIR = Path(__file__).resolve().parent.parent / "package"
 
 
 def _load_users_module():
@@ -27,21 +28,21 @@ def _load_users_module():
         stub = _t.ModuleType("Common")
         sys.modules["Common"] = stub
     sys.modules["Common"].data_dir = lambda f_name=None: f_name if f_name else '.'
-    if "phone_manager" not in sys.modules:
-        pkg = _t.ModuleType("phone_manager")
-        pkg.__path__ = [str(PACKAGE_DIR)]
-        sys.modules["phone_manager"] = pkg
-    if "phone_manager.manager" not in sys.modules:
-        manager_spec = importlib.util.spec_from_file_location(
-            "phone_manager.manager", str(PACKAGE_DIR / "manager.py")
-        )
-        manager_mod = importlib.util.module_from_spec(manager_spec)
-        sys.modules["phone_manager.manager"] = manager_mod
-        manager_spec.loader.exec_module(manager_mod)
-        sys.modules["phone_manager"].manager = manager_mod
-    spec = importlib.util.spec_from_file_location("LM_users_real", str(PACKAGE_DIR / "LM_users.py"))
+    # Load manager.py first so phone_manager.manager is available
+    mgr_spec = importlib.util.spec_from_file_location("phone_manager.manager", str(GARAGE_DIR / "manager.py"))
+    mgr_mod = importlib.util.module_from_spec(mgr_spec)
+    pkg = _t.ModuleType("phone_manager")
+    pkg.__path__ = [str(GARAGE_DIR)]
+    sys.modules["phone_manager"] = pkg
+    sys.modules["phone_manager.manager"] = mgr_mod
+    mgr_spec.loader.exec_module(mgr_mod)
+    # Now load LM_users.py
+    spec = importlib.util.spec_from_file_location("LM_users_real", str(GARAGE_DIR / "LM_users.py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    # Expose data_dir on module for test patching
+    mod.data_dir = sys.modules["Common"].data_dir
+    mod._mgr_mod = mgr_mod
     return mod
 
 
@@ -230,16 +231,16 @@ class TestUserManagement(unittest.TestCase):
     # --- module-level functions ---
 
     def test_module_load(self):
-        um_mod.UserManagement.INSTANCE = None
+        um_mod.UserManagement.INSTANCES = {}
         result = um_mod.load(os.path.basename(self.json_path))
         self.assertIn("started", result)
-        um_mod.UserManagement.INSTANCE = None
+        um_mod.UserManagement.INSTANCES = {}
 
     def test_module_load_already_running(self):
-        um_mod.UserManagement.INSTANCE = self.um
+        um_mod.UserManagement.INSTANCES["default"] = self.um
         result = um_mod.load()
         self.assertIn("already running", result)
-        um_mod.UserManagement.INSTANCE = None
+        um_mod.UserManagement.INSTANCES = {}
 
     # --- phone normalization ---
 
@@ -302,10 +303,10 @@ class TestUserManagement(unittest.TestCase):
         self.assertEqual(self.um.count_users(), 1)
 
     def test_module_count_users(self):
-        um_mod.UserManagement.INSTANCE = self.um
+        um_mod.UserManagement.INSTANCES["default"] = self.um
         self.um.add_user("+36201111111", "User1")
         self.assertEqual(um_mod.count_users(), 1)
-        um_mod.UserManagement.INSTANCE = None
+        um_mod.UserManagement.INSTANCES = {}
 
     # --- phone index ---
 
@@ -699,3 +700,191 @@ class TestUserManagement(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestMultiPhonebook(unittest.TestCase):
+    """Test multiple phonebook instances."""
+
+    def setUp(self):
+        um_mod.UserManagement.INSTANCES = {}
+        self.tmpdir = tempfile.mkdtemp()
+        # Patch data_dir at module level (from Common import data_dir binds early)
+        sys.modules["Common"].data_dir = lambda f: os.path.join(self.tmpdir, f)
+        um_mod._mgr_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
+
+    def tearDown(self):
+        um_mod.UserManagement.INSTANCES = {}
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_load_creates_named_instance(self):
+        result = um_mod.load('home.json', book='home')
+        self.assertIn('home', um_mod.UserManagement.INSTANCES)
+        self.assertIn('started', result)
+
+    def test_load_two_books(self):
+        um_mod.load('home.json', book='home')
+        um_mod.load('garage.json', book='garage')
+        self.assertEqual(len(um_mod.UserManagement.INSTANCES), 2)
+
+    def test_books_are_isolated(self):
+        um_mod.load('home.json', book='home')
+        um_mod.load('garage.json', book='garage')
+        um_mod.add_user('+36201111111', 'Home User', book='home')
+        um_mod.add_user('+36202222222', 'Garage User', book='garage')
+        self.assertEqual(um_mod.count_users(book='home'), 1)
+        self.assertEqual(um_mod.count_users(book='garage'), 1)
+        self.assertIsNone(um_mod.get_user(phone='+36201111111', book='garage'))
+        self.assertIsNone(um_mod.get_user(phone='+36202222222', book='home'))
+
+    def test_default_book_backward_compatible(self):
+        um_mod.load('users.json')
+        um_mod.add_user('+36201111111', 'Default User')
+        self.assertEqual(um_mod.count_users(), 1)
+
+    def test_unload_book(self):
+        um_mod.load('home.json', book='home')
+        result = um_mod.unload(book='home')
+        self.assertNotIn('home', um_mod.UserManagement.INSTANCES)
+        self.assertIn('stopped', result)
+
+    def test_unload_nonexistent(self):
+        result = um_mod.unload(book='bogus')
+        self.assertIn('not loaded', result)
+
+    def test_list_books(self):
+        um_mod.load('home.json', book='home')
+        um_mod.load('garage.json', book='garage')
+        books = um_mod.list_books()
+        self.assertIn('home', books)
+        self.assertIn('garage', books)
+
+    def test_access_unloaded_book_raises(self):
+        with self.assertRaises(RuntimeError):
+            um_mod.get_all_users(book='nonexistent')
+
+    def test_check_access_per_book(self):
+        um_mod.load('home2.json', book='home')
+        um_mod.load('garage2.json', book='garage')
+        um_mod.add_user('+36201111111', 'Owner', role='admin', book='home')
+        um_mod.add_user('+36201111111', 'Owner', role='admin', book='garage')
+        um_mod.add_user('+36202222222', 'Cleaner', role='user', book='home')
+        # Cleaner is in home but not in garage
+        home_users = um_mod.get_user(phone='+36202222222', book='home')
+        garage_users = um_mod.get_user(phone='+36202222222', book='garage')
+        self.assertIsNotNone(home_users)
+        self.assertIsNone(garage_users)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
+
+
+class TestDailyTimeWindow(unittest.TestCase):
+    """Test daily_from/daily_to time window access control."""
+
+    def setUp(self):
+        um_mod.UserManagement.INSTANCES = {}
+        self.tmpdir = tempfile.mkdtemp()
+        sys.modules["Common"].data_dir = lambda f: os.path.join(self.tmpdir, f)
+        um_mod._mgr_mod.data_dir = lambda f: os.path.join(self.tmpdir, f)
+        um_mod.load('daily_test.json', book='daily')
+
+    def tearDown(self):
+        um_mod.UserManagement.INSTANCES = {}
+        import shutil
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_add_user_with_daily_window(self):
+        result = um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        self.assertIn('added', result)
+        user = um_mod.get_user(phone='+36201111111', book='daily')[0]
+        self.assertEqual(user['daily_from'], '08:00')
+        self.assertEqual(user['daily_to'], '17:00')
+
+    def test_add_user_invalid_daily_from(self):
+        result = um_mod.add_user('+36201111111', 'Worker', daily_from='25:00', book='daily')
+        self.assertIn('Invalid daily_from', result)
+
+    def test_add_user_invalid_daily_to(self):
+        result = um_mod.add_user('+36201111111', 'Worker', daily_to='abc', book='daily')
+        self.assertIn('Invalid daily_to', result)
+
+    @mock.patch('time.localtime')
+    def test_access_within_window(self, mock_lt):
+        # 10:30 — within 08:00-17:00
+        mock_lt.return_value = (2025, 1, 15, 10, 30, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertFalse(denied)
+
+    @mock.patch('time.localtime')
+    def test_access_before_window(self, mock_lt):
+        # 07:00 — before 08:00
+        mock_lt.return_value = (2025, 1, 15, 7, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertTrue(denied)
+
+    @mock.patch('time.localtime')
+    def test_access_after_window(self, mock_lt):
+        # 18:00 — after 17:00
+        mock_lt.return_value = (2025, 1, 15, 18, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertTrue(denied)
+
+    @mock.patch('time.localtime')
+    def test_access_at_exact_start(self, mock_lt):
+        # 08:00 — exactly at start
+        mock_lt.return_value = (2025, 1, 15, 8, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertFalse(denied)
+
+    @mock.patch('time.localtime')
+    def test_access_at_exact_end(self, mock_lt):
+        # 17:00 — at end (exclusive)
+        mock_lt.return_value = (2025, 1, 15, 17, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertTrue(denied)
+
+    @mock.patch('time.localtime')
+    def test_no_daily_restriction_always_ok(self, mock_lt):
+        # No daily_from/daily_to — always accessible
+        mock_lt.return_value = (2025, 1, 15, 3, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Owner', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertFalse(denied)
+
+    @mock.patch('time.localtime')
+    def test_only_daily_from(self, mock_lt):
+        # daily_from='08:00', no daily_to — accessible from 08:00 onwards
+        mock_lt.return_value = (2025, 1, 15, 7, 59, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_from='08:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertTrue(denied)
+        mock_lt.return_value = (2025, 1, 15, 22, 0, 0, 0, 0, -1)
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertFalse(denied)
+
+    @mock.patch('time.localtime')
+    def test_only_daily_to(self, mock_lt):
+        # no daily_from, daily_to='17:00' — accessible until 17:00
+        mock_lt.return_value = (2025, 1, 15, 5, 0, 0, 0, 0, -1)
+        um_mod.add_user('+36201111111', 'Worker', daily_to='17:00', book='daily')
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertFalse(denied)
+        mock_lt.return_value = (2025, 1, 15, 17, 0, 0, 0, 0, -1)
+        denied = um_mod.check_access('+36201111111', book='daily')
+        self.assertTrue(denied)
+
+    def test_daily_window_persisted(self):
+        um_mod.add_user('+36201111111', 'Worker', daily_from='09:00', daily_to='18:00', book='daily')
+        # Reload
+        um_mod.unload(book='daily')
+        um_mod.load('daily_test.json', book='daily')
+        user = um_mod.get_user(phone='+36201111111', book='daily')[0]
+        self.assertEqual(user['daily_from'], '09:00')
+        self.assertEqual(user['daily_to'], '18:00')
