@@ -64,7 +64,7 @@ class DebouncedInput:
         self.last_irq_time = time.ticks_ms()
         event = "triggered" if current == 0 else "reset"
         console(f"{self.name} {event}")
-        Notify.notify(json.dumps({self.name: event}), topic="alarm/sensor")
+        Notify.notify(json.dumps({self.name: event}), topic="alarm/sensor/state")
         if self.callback:
             self.callback(self.name, event)
 

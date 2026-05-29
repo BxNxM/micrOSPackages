@@ -289,7 +289,7 @@ class TestReportState(unittest.TestCase):
     def test_topic_is_alarm_sensor(self):
         inp = _make_input(name="door")
         inp._report_state(0)
-        self.assertEqual(Notify.notify.call_args[1]['topic'], "alarm/sensor")
+        self.assertEqual(Notify.notify.call_args[1]['topic'], "alarm/sensor/state")
 
     def test_report_updates_last_reported_state(self):
         inp = _make_input(initial_value=1)
