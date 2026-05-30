@@ -6,6 +6,11 @@ import shutil
 REPO_ROOT  = Path(__file__).resolve().parent.parent
 CACHE_DIR_PATH  = Path(__file__).resolve().parent / "cache"
 DEFAULT_UNPACKED_DIR = REPO_ROOT / "unpacked"
+WEB_DATA_DIR = "data"
+
+
+def is_web_target(target: str) -> bool:
+    return target == "/web" or target.startswith("/web/")
 
 try:
     from .validate import find_all_packages, GITHUB_BASE
@@ -52,13 +57,38 @@ def resolve_urls_with_local_path(files_list:list, target_dir_lib:Path) -> list:
 def copy_package_resources(local_packages):
 
     for package_source in local_packages:
-        source_path = package_source[1]
-        target_path = package_source[0]
+        source_path = Path(package_source[1])
+        target_path = Path(package_source[0])
         print(f"COPY {source_path} to {target_path}")
         try:
+            target_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(source_path, target_path)
         except Exception as e:
             print(f"Error copying {source_path} to {target_path}: {e}")
+
+
+def resolve_layout_source(lib_path:Path, package_name:str, target:str, source:str) -> Path:
+    if is_web_target(target):
+        if Path(source).parts and Path(source).parts[0] == package_name:
+            return lib_path / source
+        direct_source = lib_path / package_name / source
+        source_parts = Path(source).parts
+        if (
+            not direct_source.exists()
+            and len(source_parts) > 1
+            and source_parts[0] == WEB_DATA_DIR
+        ):
+            return lib_path / package_name / Path(*source_parts[1:])
+        return direct_source
+    return lib_path / source
+
+
+def resolve_layout_target(lib_path:Path, target:str, source:str) -> Path:
+    if is_web_target(target):
+        source_rel = Path(source)
+    else:
+        source_rel = Path(source).name
+    return lib_path.parent / target.lstrip("/") / source_rel
 
 
 def post_install(lib_path:Path, package_name:str) -> tuple[list, list]:
@@ -78,12 +108,14 @@ def post_install(lib_path:Path, package_name:str) -> tuple[list, list]:
 
         for target, sources in package_layout.items():
             for s in sources:
-                source_abs_path = lib_path / s
-                target_abs_path = lib_path.parent / target.lstrip("/") / Path(s).name
+                source_abs_path = resolve_layout_source(lib_path, package_name, target, s)
+                target_abs_path = resolve_layout_target(lib_path, target, s)
                 print(f"[Unpack] Move {source_abs_path} -> {target_abs_path}")
                 if not target_abs_path.parent.is_dir():
                     print(f"[Unpack] Create subdir: {str(target_abs_path.parent)}")
-                    target_abs_path.parent.mkdir()
+                    target_abs_path.parent.mkdir(parents=True)
+                if source_abs_path == target_abs_path:
+                    continue
                 if target_abs_path.is_file():
                     overwrites.append(str(target_abs_path).replace(str(lib_path.parent), ""))
                 shutil.move(source_abs_path, target_abs_path)

@@ -1,23 +1,18 @@
 {
     "versions": {
-        "packager": "0.1.0",
-        "package": "2.0.0"
+        "packager": "0.2.0",
+        "package": "1.0.0"
     },
     "url": "github:BxNxM/micrOSPackages/alarm_system",
     "layout": {
         "/modules": [
             "LM_alarm_system.py"
         ],
-        "/lib/alarm_system": [
-            "__init__.py",
-            "door_sensor.py",
-            "event_log.py",
-            "mqtt_watcher.py",
-            "actions.py",
-            "sms_handler.py"
-        ],
-        "/web": [],
-        "/web/data": [],
-        "/data": []
-    }
+        "/data": [],
+        "/web": []
+    },
+    "deps": [
+        "sim800",
+        "phone_manager"
+    ]
 }

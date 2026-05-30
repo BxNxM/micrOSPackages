@@ -1,6 +1,6 @@
 {
     "versions": {
-        "packager": "0.1.0",
+        "packager": "0.2.0",
         "package": "0.0.1"
     },
     "url": "github:BxNxM/micrOSPackages/blinky_example",
@@ -8,8 +8,8 @@
         "/modules": [
             "LM_blinky.py"
         ],
-        "/web": [],
-        "/web/data": [],
-        "/data": []
-    }
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
 }

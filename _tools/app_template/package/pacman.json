@@ -5,8 +5,8 @@
   "url": "",
   "layout": {
     "/modules": [],
-    "/web": [],
-    "/web/data": [],
-    "/data": []
-    }
+    "/data": [],
+    "/web": []
+    },
+  "deps": []
 }

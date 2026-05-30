@@ -1,6 +1,6 @@
 {
     "versions": {
-        "packager": "0.1.0",
+        "packager": "0.2.0",
         "package": "0.0.2"
     },
     "url": "github:BxNxM/micrOSPackages/async_mqtt",
@@ -8,8 +8,10 @@
         "/modules": [
             "LM_mqtt_client.py"
         ],
-        "/web": [],
-        "/web/data": [],
-        "/data": []
-    }
+        "/data": [],
+        "/web": []
+    },
+    "deps": [
+        "micropython-mqtt"
+    ]
 }

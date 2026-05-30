@@ -1,15 +1,17 @@
 {
     "versions": {
-        "packager": "0.1.0",
-        "package": "1.0.0"
+        "packager": "0.2.0",
+        "package": "2.0.0"
     },
     "url": "github:BxNxM/micrOSPackages/sim800",
     "layout": {
         "/modules": [
-            "LM_sim800.py"
+            "LM_sim800.py",
+            "LM_sim800_http.py",
+            "LM_sim800mqtt.py"
         ],
-        "/web": [],
-        "/web/data": [],
-        "/data": []
-    }
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
 }

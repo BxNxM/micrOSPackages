@@ -2,28 +2,28 @@
     "version": "0.0.3",
     "urls": [
         [
-            "neopixel_matrix/effects.py",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/effects.py"
-        ],
-        [
-            "neopixel_matrix/matrix_draw.html",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/matrix_draw.html"
-        ],
-        [
-            "neopixel_matrix/file_player.py",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/file_player.py"
+            "LM_neomatrix.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/LM_neomatrix.py"
         ],
         [
             "neopixel_matrix/__init__.py",
             "github:BxNxM/micrOSPackages/neopixel_matrix/package/__init__.py"
         ],
         [
-            "neopixel_matrix/pacman.json",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/pacman.json"
+            "neopixel_matrix/effects.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/effects.py"
         ],
         [
-            "LM_neomatrix.py",
-            "github:BxNxM/micrOSPackages/neopixel_matrix/package/LM_neomatrix.py"
+            "neopixel_matrix/file_player.py",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/file_player.py"
+        ],
+        [
+            "neopixel_matrix/matrix_draw.html",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/matrix_draw.html"
+        ],
+        [
+            "neopixel_matrix/pacman.json",
+            "github:BxNxM/micrOSPackages/neopixel_matrix/package/pacman.json"
         ]
     ],
     "deps": []

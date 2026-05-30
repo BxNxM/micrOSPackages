@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Enable githooks:
 #   git config --get core.hooksPath

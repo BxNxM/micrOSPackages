@@ -101,11 +101,21 @@ if __name__ == "__main__":
 
     # --- UPDATE LOGIC ---
     if args.update is not None:
-        package_name = args.update
-        package_path = create_package.REPO_ROOT / package_name / "package"
-        print(f"Updating package.json for {package_name}")
-        create_package.update_package_json(package_path, package_name)
-        create_package.update_pacman_json(package_path, package_name)
+        if args.update == "ALL":
+            packages = validate.find_all_packages(create_package.REPO_ROOT)
+            print(f"Updating ALL packages ({len(packages)})...")
+            for package in packages:
+                package_name = package.split("/")[-1]
+                package_path = create_package.REPO_ROOT / package_name / "package"
+                print(f"Updating package.json for {package_name}")
+                create_package.update_package_json(package_path, package_name)
+                create_package.update_pacman_json(package_path, package_name)
+        else:
+            package_name = args.update
+            package_path = create_package.REPO_ROOT / package_name / "package"
+            print(f"Updating package.json for {package_name}")
+            create_package.update_package_json(package_path, package_name)
+            create_package.update_pacman_json(package_path, package_name)
 
     # --- UNIT TEST LOGIC ---
     if args.unit_test is not None:

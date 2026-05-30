@@ -4,8 +4,14 @@ from pathlib import Path
 import shutil
 from pprint import pprint
 import json
+from copy import deepcopy
 
-PACKAGER_VERSION = "0.1.0"
+try:
+    from .package_rules import package_dest, package_files, merge_pacman_layout, pacman_layout_for_urls
+except ImportError:
+    from package_rules import package_dest, package_files, merge_pacman_layout, pacman_layout_for_urls
+
+PACKAGER_VERSION = "0.2.0"
 REPO_ROOT  = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = Path(__file__).resolve().parent / "app_template"
 GITHUB_BASE = "github:BxNxM/micrOSPackages"
@@ -103,15 +109,15 @@ def update_package_json(target_path:Path, package:str):
     """Checking package"""
     package_json_file = target_path.parent / "package.json"
     package_dir_name = target_path.name
-    resources = [p.name for p in target_path.iterdir() if p.is_file()]
+    resources = [
+        p.relative_to(target_path).as_posix()
+        for p in package_files(target_path)
+    ]
     print(f"\t Discovered resources: {resources}")
     destination_source_lists = []
     for r in resources:
         _source = f"{github_package_url(package)}/{package_dir_name}/{r}"
-        if r.startswith("LM_"):
-            destination_source_lists.append([f"{r}", _source])
-        else:
-            destination_source_lists.append([f"{package}/{r}", _source])
+        destination_source_lists.append([package_dest(package, r), _source])
     print("Build destination - source mapping for mip")
     #pprint(destination_source_lists, indent=2)
     with open(package_json_file, "r+") as f:
@@ -126,25 +132,48 @@ def update_package_json(target_path:Path, package:str):
     print(f"✅Updated: {package_json_file}")
 
 
-def _reset_pacman_json_layout(layout:dict):
-    for l in layout:
-        layout[l] = []
-    print("pacman.json layout reset done")
+def _load_template_pacman_json():
+    template_pacman_json_path = TEMPLATE_DIR / "package" / "pacman.json"
+    with open(template_pacman_json_path, "r") as f:
+        return json.load(f)
+
+
+def _merge_pacman_template_defaults(data:dict, template_data:dict):
+    """Backfill new top-level pacman.json template sections into existing packages."""
+    for key, value in template_data.items():
+        if key not in data:
+            data[key] = deepcopy(value)
+
+
+def _pacman_dep_name(dep_name:str):
+    return dep_name.rstrip("/").split("/")[-1]
+
+
+def _pacman_deps(package_deps:list):
+    pacman_deps = []
+    for dep in package_deps:
+        if isinstance(dep, list) and dep:
+            pacman_deps.append(_pacman_dep_name(dep[0]))
+        elif isinstance(dep, str):
+            pacman_deps.append(_pacman_dep_name(dep))
+        else:
+            pacman_deps.append(dep)
+    return pacman_deps
 
 
 def update_pacman_json(target_path:Path, package:str):
     """Update pacman.json based on package.json"""
     package_json_file = target_path.parent / "package.json"
     pacman_json_file = target_path.parent / "package" / "pacman.json"
+    template_pacman_json_path = TEMPLATE_DIR / "package" / "pacman.json"
 
     with open(package_json_file, 'r') as f:
         _package_json_dict = json.load(f)
         package_urls = _package_json_dict.get("urls", [])
         package_version = _package_json_dict.get("version", "0.0.0")
-    package_file_targets = [p[0] for p in package_urls if p]
+        package_deps = _package_json_dict.get("deps", [])
     if not pacman_json_file.exists():
         # Copy pacman.json from template
-        template_pacman_json_path = TEMPLATE_DIR / "package" / "pacman.json"
         if template_pacman_json_path.is_file():
             shutil.copy2(template_pacman_json_path, pacman_json_file)
         else:
@@ -153,30 +182,14 @@ def update_pacman_json(target_path:Path, package:str):
     # Update pacman.json
     with open(pacman_json_file, "r+") as f:
         data = json.load(f)  # read the JSON
+        template_data = _load_template_pacman_json()
+        _merge_pacman_template_defaults(data, template_data)
         data["versions"]["packager"] = PACKAGER_VERSION
         data["versions"]["package"] = package_version
         data["url"] = github_package_url(package)
-        _reset_pacman_json_layout(data["layout"])
-        for res in package_file_targets:
-            # Unpackaging destination generation
-            if res.endswith("py"):
-                if "LM_" in res:
-                    # MOVE: LM_* -> /modules
-                    data["layout"]["/modules"].append(res)
-                else:
-                    # SKIP: basic .py/.mpy in the package
-                    continue
-            elif res.split(".")[-1] in ["js", "html", "css"]:
-                # MOVE: web resources under /web
-                data["layout"]["/web"].append(res)
-            elif res.split(".")[-1] in ["png", "jpeg", "ico", "gif"]:
-                # MOVE: web data under /web
-                data["layout"]["/web/data"].append(res)
-            else:
-                if res.endswith("pacman.json"):
-                    continue
-                # MOVE: move everything else under /data
-                data["layout"]["/data"].append(res)
+        data["deps"] = _pacman_deps(package_deps)
+        generated_layout = pacman_layout_for_urls(package, package_urls, template_data.get("layout", {}))
+        data["layout"] = merge_pacman_layout(data.get("layout", {}), generated_layout, template_data.get("layout", {}))
 
         f.seek(0)  # move cursor to start
         json.dump(data, f, indent=4)

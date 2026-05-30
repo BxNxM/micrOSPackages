@@ -1,6 +1,6 @@
 {
     "versions": {
-        "packager": "0.1.0",
+        "packager": "0.2.0",
         "package": "1.0.0"
     },
     "url": "github:BxNxM/micrOSPackages/garage_remote",
@@ -8,8 +8,11 @@
         "/modules": [
             "LM_garage.py"
         ],
-        "/web": [],
-        "/web/data": [],
-        "/data": []
-    }
+        "/data": [],
+        "/web": []
+    },
+    "deps": [
+        "sim800",
+        "phone_manager"
+    ]
 }

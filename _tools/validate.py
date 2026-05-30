@@ -5,11 +5,14 @@ import sys
 from pathlib import Path
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
+TEMPLATE_PACMAN_JSON = Path(ROOT) / "app_template" / "package" / "pacman.json"
 
 try:
     from .create_package import GITHUB_BASE
+    from .package_rules import layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, pacman_layout_for_urls
 except ImportError:
     from create_package import GITHUB_BASE
+    from package_rules import layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, pacman_layout_for_urls
 
 VERBOSE = True
 
@@ -105,6 +108,43 @@ def validate_dest_path(dest: str) -> bool:
     return True
 
 
+def device_lib_target(dest: str) -> str:
+    """Return the package install target as it appears under /lib."""
+    return f"/lib/{dest.lstrip('/')}"
+
+
+def relative_local_path(path: str) -> str:
+    """Return a readable path relative to the packages repo root."""
+    repo_root = os.path.dirname(ROOT)
+    return os.path.relpath(path, repo_root)
+
+
+def verbose_print_url_row(status: str, package_ref: str, local_path: str, device_target: str, note: str = ""):
+    suffix = f"  ({note})" if note else ""
+    verbose_print(f"  {status} {package_ref} | {local_path} | {device_target}{suffix}")
+
+
+def expected_package_urls(pkg_path: Path) -> list[list[str]]:
+    pkg_name = pkg_path.name
+    pkg_content_path = pkg_path / "package"
+    urls = []
+    for file_path in package_files(pkg_content_path):
+        rel = file_path.relative_to(pkg_content_path).as_posix()
+        src = f"{GITHUB_BASE}/{pkg_name}/package/{rel}"
+        urls.append([package_dest(pkg_name, rel), src])
+    return urls
+
+
+def load_template_pacman_json() -> dict:
+    with open(TEMPLATE_PACMAN_JSON, "r") as f:
+        return json.load(f)
+
+
+def expected_pacman_layout(pkg_name: str, urls: list[list[str]]) -> dict:
+    template_data = load_template_pacman_json()
+    return pacman_layout_for_urls(pkg_name, urls, template_data.get("layout", {}))
+
+
 def validate_package_json(pkg_path):
     """
     Validate package.json and file references
@@ -130,6 +170,7 @@ def validate_package_json(pkg_path):
 
     package_lm_exists = False
     package_pacman_json_exists = False
+    verbose_print("  package reference | local relative path | target on device")
     for entry in urls:
         if not isinstance(entry, (list, tuple)) or len(entry) != 2:
             print(f"  ❌ Invalid urls entry (expected [dest, src]): {entry}")
@@ -137,14 +178,15 @@ def validate_package_json(pkg_path):
             continue
 
         dest, src = entry
+        device_target = device_lib_target(dest) if isinstance(dest, str) else "n/a"
         # Optional resource check
-        if dest.endswith("pacman.json"):
+        if isinstance(dest, str) and dest.endswith("pacman.json"):
             package_pacman_json_exists = True
-        if dest.split("/")[-1].startswith("LM_"):
+        if isinstance(dest, str) and dest.split("/")[-1].startswith("LM_"):
             package_lm_exists = True
 
         if not validate_dest_path(dest):
-            print(f"  ❌ {src}  ➜  {dest}   (invalid dest path: contains '..')")
+            verbose_print_url_row("❌", str(src), "n/a", device_target, "invalid dest path: contains '..'")
             all_ok = False
             continue
 
@@ -155,8 +197,8 @@ def validate_package_json(pkg_path):
             status = "✅" if exists else "❌"
             if not exists:
                 all_ok = False
-            rel_local = os.path.relpath(repo_local_path, ROOT).replace("../", "./")
-            verbose_print(f"  {status} {src}  ➜  {dest}   (local: {rel_local})")
+            rel_local = relative_local_path(repo_local_path)
+            verbose_print_url_row(status, src, rel_local, device_target)
             continue
 
         # 2) Plain local paths (relative to package folder)
@@ -166,11 +208,12 @@ def validate_package_json(pkg_path):
             status = "✅" if exists else "❌"
             if not exists:
                 all_ok = False
-            verbose_print(f"  {status} {src}  ➜  {dest}")
+            rel_local = relative_local_path(src_path)
+            verbose_print_url_row(status, src, rel_local, device_target)
             continue
 
         # 3) Other remotes: different GitHub repo or http(s)
-        verbose_print(f"  🌐 {src}  ➜  {dest}   (remote, not checked)")
+        verbose_print_url_row("🌐", src, "remote, not checked", device_target)
 
     verbose_print(f"{'✅ Load Module exists' if package_lm_exists else '⚠️ Load Module missing'}")
     verbose_print(f"{'✅ Packaging metadata exists (pacman.json)' if package_pacman_json_exists else '⚠️  Packaging metadata missing (pacman.json)'}")
@@ -179,31 +222,107 @@ def validate_package_json(pkg_path):
 
 def validate_package(pkg_path):
     """
-    Validate /package folder content against package.json
-    - Ensure all files present
-    - TODO: check files by name
+    Validate /package folder content against package.json and pacman.json.
     """
     if not isinstance(pkg_path, Path):
         pkg_path = Path(pkg_path)
 
     pkg_json = pkg_path / "package.json"
-    pkg_content_path = pkg_path / "package"
-    package_folder_files = [p for p in pkg_content_path.iterdir() if p.is_file()]
-    folder_files_len = len(package_folder_files)
+    pacman_json = pkg_path / "package" / "pacman.json"
+    pkg_name = pkg_path.name
 
     try:
-        with  open(pkg_json, 'r') as f:
-            pkg_json_urls = json.load(f).get("urls", [])
-        pkg_json_urls_len = len(pkg_json_urls)
+        with open(pkg_json, 'r') as f:
+            package_data = json.load(f)
     except Exception as e:
         print(f"❌ Cannot load {str(pkg_json)}: {e}")
-        pkg_json_urls_len = 0
+        return False
 
-    # Check package.json and packages are matching
-    if folder_files_len == pkg_json_urls_len:
-        return True
-    print(f"❌ File missmatch in {pkg_path.name}/package.json vs. {pkg_path.name}/package")
-    return False
+    expected_urls = expected_package_urls(pkg_path)
+    actual_urls = package_data.get("urls", [])
+    all_ok = True
+    if actual_urls != expected_urls:
+        print(f"❌ package.json urls mismatch in {pkg_name}")
+        verbose_print(f"  expected: {expected_urls}")
+        verbose_print(f"  actual:   {actual_urls}")
+        all_ok = False
+
+    try:
+        with open(pacman_json, 'r') as f:
+            pacman_data = json.load(f)
+    except Exception as e:
+        print(f"❌ Cannot load {str(pacman_json)}: {e}")
+        return False
+
+    layout = pacman_data.get("layout")
+    if not isinstance(layout, dict):
+        print(f"❌ pacman.json layout missing or invalid in {pkg_name}")
+        return False
+
+    template_data = load_template_pacman_json()
+    missing_keys = sorted(set(template_data) - set(pacman_data))
+    if missing_keys:
+        print(f"❌ pacman.json missing top-level key(s) in {pkg_name}: {missing_keys}")
+        all_ok = False
+
+    expected_layout = expected_pacman_layout(pkg_name, expected_urls)
+    unexpected_targets = sorted(
+        target for target in layout
+        if not layout_target_allowed(target, template_data.get("layout", {}))
+    )
+    if unexpected_targets:
+        print(f"❌ pacman.json layout has inaccessible target(s) in {pkg_name}: {unexpected_targets}")
+        all_ok = False
+
+    invalid_sources = [
+        f"{target}: {source}"
+        for target, sources in layout.items()
+        for source in sources
+        if not layout_source_allowed(source)
+    ]
+    if invalid_sources:
+        print(f"❌ pacman.json layout has invalid source path(s) in {pkg_name}: {invalid_sources}")
+        all_ok = False
+
+    actual_target_paths = {
+        layout_entry_target_path(target, source)
+        for target, sources in layout.items()
+        for source in sources
+        if layout_source_allowed(source)
+    }
+    expected_target_paths = {
+        layout_entry_target_path(target, source)
+        for target, sources in expected_layout.items()
+        for source in sources
+    }
+    extra_target_paths = sorted(actual_target_paths - expected_target_paths)
+    if extra_target_paths:
+        print(f"❌ pacman.json layout has stale target path(s) in {pkg_name}: {extra_target_paths}")
+        all_ok = False
+
+    for target, expected_sources in expected_layout.items():
+        actual_sources = layout.get(target, [])
+        missing_sources = [
+            source for source in expected_sources
+            if layout_entry_target_path(target, source) not in actual_target_paths
+        ]
+        if missing_sources:
+            print(f"❌ pacman.json layout mismatch in {pkg_name}: {target}")
+            verbose_print(f"  missing expected target(s): {missing_sources}")
+            verbose_print(f"  actual:   {actual_sources}")
+            all_ok = False
+
+    for target, actual_sources in layout.items():
+        if len(actual_sources) != len(set(actual_sources)):
+            print(f"❌ pacman.json layout has duplicate source(s) in {pkg_name}: {target}")
+            all_ok = False
+
+    pacman_deps = pacman_data.get("deps", [])
+    if not isinstance(pacman_deps, list) or any(isinstance(dep, list) for dep in pacman_deps):
+        print(f"❌ pacman.json deps must be a flat list of package folder names in {pkg_name}")
+        all_ok = False
+
+    return all_ok
 
 
 def main(pack_name:str=None, verbose:bool=True):
