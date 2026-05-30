@@ -7,9 +7,9 @@ import json
 from copy import deepcopy
 
 try:
-    from .package_rules import package_dest, package_files, merge_pacman_layout, pacman_layout_for_urls
+    from .package_rules import package_dest, package_files, package_name_allowed, merge_pacman_layout, pacman_layout_for_urls
 except ImportError:
-    from package_rules import package_dest, package_files, merge_pacman_layout, pacman_layout_for_urls
+    from package_rules import package_dest, package_files, package_name_allowed, merge_pacman_layout, pacman_layout_for_urls
 
 PACKAGER_VERSION = "0.2.0"
 REPO_ROOT  = Path(__file__).resolve().parent.parent
@@ -77,6 +77,9 @@ def create_package(package, module):
         module = module.replace("LM_", "")
     if "-" in package:
         package = package.replace("-", "_")
+    if not package_name_allowed(package) or not package_name_allowed(module):
+        print(f"❌ Invalid package or module name: {package}, {module}")
+        sys.exit(1)
     # 1. Create new-package directory in repo root
     print(f"⭐️[1/7] Create new-package directory: {package}")
     target = REPO_ROOT / package
@@ -96,11 +99,10 @@ def create_package(package, module):
     # 3. Rename LM_app.py to LM_<module>.py
     print(f"⭐️[4/7] Rename LM_app.py -> LM_{module}.py")
     Path(target_package_dir / "LM_app.py").rename(target_package_dir / f"LM_{module}.py")
-    # 4. Update package.json with new module information
-    print(f"⭐️[5/7] Update package.json with new module information")
-    update_package_json(target_package_dir, package)
-    print(f"⭐️[6/7] Update pacman.json with package management information (layout, url, etc.)")
-    update_pacman_json(target_package_dir, package)
+    # 4. Generate mip mapping first, then derive micrOS lifecycle metadata from it
+    print(f"⭐️[5/7] Generate package metadata")
+    update_package(target_package_dir, package)
+    print(f"⭐️[6/7] Package metadata ready")
     print(f"⭐️[7/7] Render application README")
     render_readme(package, module)
 
@@ -161,6 +163,16 @@ def _pacman_deps(package_deps:list):
     return pacman_deps
 
 
+def update_package(target_path:Path, package:str):
+    """Regenerate mip mapping first, then derive micrOS lifecycle metadata."""
+    if not package_name_allowed(package):
+        raise ValueError(f"Invalid package name: {package}")
+    print(f"Updating package.json for {package}")
+    update_package_json(target_path, package)
+    print(f"Updating pacman.json for {package}")
+    update_pacman_json(target_path, package)
+
+
 def update_pacman_json(target_path:Path, package:str):
     """Update pacman.json based on package.json"""
     package_json_file = target_path.parent / "package.json"
@@ -184,8 +196,12 @@ def update_pacman_json(target_path:Path, package:str):
         data = json.load(f)  # read the JSON
         template_data = _load_template_pacman_json()
         _merge_pacman_template_defaults(data, template_data)
-        data["versions"]["packager"] = PACKAGER_VERSION
-        data["versions"]["package"] = package_version
+        versions = data.get("versions")
+        if not isinstance(versions, dict):
+            versions = deepcopy(template_data.get("versions", {}))
+            data["versions"] = versions
+        versions["packager"] = PACKAGER_VERSION
+        versions["package"] = package_version
         data["url"] = github_package_url(package)
         data["deps"] = _pacman_deps(package_deps)
         generated_layout = pacman_layout_for_urls(package, package_urls, template_data.get("layout", {}))

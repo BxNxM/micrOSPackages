@@ -9,10 +9,10 @@ TEMPLATE_PACMAN_JSON = Path(ROOT) / "app_template" / "package" / "pacman.json"
 
 try:
     from .create_package import GITHUB_BASE
-    from .package_rules import layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, pacman_layout_for_urls
+    from .package_rules import is_pacman_metadata, layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, package_name_allowed, pacman_layout_for_urls, relative_path_allowed
 except ImportError:
     from create_package import GITHUB_BASE
-    from package_rules import layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, pacman_layout_for_urls
+    from package_rules import is_pacman_metadata, layout_entry_target_path, layout_source_allowed, layout_target_allowed, package_dest, package_files, package_name_allowed, pacman_layout_for_urls, relative_path_allowed
 
 VERBOSE = True
 
@@ -54,6 +54,8 @@ def resolve_packages(pack_name: str = None):
     source_path = os.path.dirname(ROOT)
     if pack_name is None:
         return find_all_packages(source_path)
+    if not package_name_allowed(pack_name):
+        return []
 
     package = os.path.join(source_path, pack_name)
     if _check_package_json(package):
@@ -100,12 +102,8 @@ def resolve_repo_local_github_path(src: str, pkg_name: str, pkg_path: str):
 
 
 def validate_dest_path(dest: str) -> bool:
-    """Basic sanity check for destination path (no '..')."""
-    if not isinstance(dest, str):
-        return False
-    if ".." in dest.split("/"):
-        return False
-    return True
+    """Check that a mip destination stays relative to /lib."""
+    return relative_path_allowed(dest)
 
 
 def device_lib_target(dest: str) -> str:
@@ -180,7 +178,7 @@ def validate_package_json(pkg_path):
         dest, src = entry
         device_target = device_lib_target(dest) if isinstance(dest, str) else "n/a"
         # Optional resource check
-        if isinstance(dest, str) and dest.endswith("pacman.json"):
+        if isinstance(dest, str) and is_pacman_metadata(dest):
             package_pacman_json_exists = True
         if isinstance(dest, str) and dest.split("/")[-1].startswith("LM_"):
             package_lm_exists = True
@@ -274,9 +272,18 @@ def validate_package(pkg_path):
         print(f"❌ pacman.json layout has inaccessible target(s) in {pkg_name}: {unexpected_targets}")
         all_ok = False
 
+    invalid_source_lists = sorted(
+        target for target, sources in layout.items()
+        if not isinstance(sources, list)
+    )
+    if invalid_source_lists:
+        print(f"❌ pacman.json layout target value must be a list in {pkg_name}: {invalid_source_lists}")
+        all_ok = False
+
     invalid_sources = [
         f"{target}: {source}"
         for target, sources in layout.items()
+        if isinstance(sources, list)
         for source in sources
         if not layout_source_allowed(source)
     ]
@@ -287,6 +294,7 @@ def validate_package(pkg_path):
     actual_target_paths = {
         layout_entry_target_path(target, source)
         for target, sources in layout.items()
+        if isinstance(sources, list)
         for source in sources
         if layout_source_allowed(source)
     }
@@ -313,12 +321,14 @@ def validate_package(pkg_path):
             all_ok = False
 
     for target, actual_sources in layout.items():
+        if not isinstance(actual_sources, list):
+            continue
         if len(actual_sources) != len(set(actual_sources)):
             print(f"❌ pacman.json layout has duplicate source(s) in {pkg_name}: {target}")
             all_ok = False
 
     pacman_deps = pacman_data.get("deps", [])
-    if not isinstance(pacman_deps, list) or any(isinstance(dep, list) for dep in pacman_deps):
+    if not isinstance(pacman_deps, list) or any(not package_name_allowed(dep) for dep in pacman_deps):
         print(f"❌ pacman.json deps must be a flat list of package folder names in {pkg_name}")
         all_ok = False
 

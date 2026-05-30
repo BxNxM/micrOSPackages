@@ -3,7 +3,8 @@
 import argparse
 import sys
 import subprocess
-from _tools import validate, serve_packages, create_package, unpack, ut_executor
+from pathlib import Path
+from _tools import validate, serve_packages, create_package, unpack, ut_executor, pacman_inspect
 
 
 def check_githooks():
@@ -53,7 +54,14 @@ def build_parser():
     # UPDATE: package.json urls
     parser.add_argument(
         "-u", "--update",
-        help="✅ Update application package.json and pacman.json by package name"
+        help="✅ Update application package.json and pacman.json by package name, or run for all with ALL param."
+    )
+
+    parser.add_argument(
+        "-i", "--inspect",
+        nargs="?",
+        const="__SELECT__",
+        help="🔎 Inspect a package layout by name, or select interactively if omitted"
     )
 
     parser.add_argument(
@@ -105,17 +113,19 @@ if __name__ == "__main__":
             packages = validate.find_all_packages(create_package.REPO_ROOT)
             print(f"Updating ALL packages ({len(packages)})...")
             for package in packages:
-                package_name = package.split("/")[-1]
+                package_name = Path(package).name
                 package_path = create_package.REPO_ROOT / package_name / "package"
-                print(f"Updating package.json for {package_name}")
-                create_package.update_package_json(package_path, package_name)
-                create_package.update_pacman_json(package_path, package_name)
+                create_package.update_package(package_path, package_name)
         else:
             package_name = args.update
             package_path = create_package.REPO_ROOT / package_name / "package"
-            print(f"Updating package.json for {package_name}")
-            create_package.update_package_json(package_path, package_name)
-            create_package.update_pacman_json(package_path, package_name)
+            create_package.update_package(package_path, package_name)
+
+    # --- INSPECT LOGIC ---
+    if args.inspect is not None:
+        package_name = None if args.inspect == "__SELECT__" else args.inspect
+        if not pacman_inspect.inspect_package(package_name):
+            sys.exit(1)
 
     # --- UNIT TEST LOGIC ---
     if args.unit_test is not None:

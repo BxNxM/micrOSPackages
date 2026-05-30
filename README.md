@@ -1,4 +1,4 @@
-# ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png) micrOS Packages 📦 v0.1
+# ![logo](https://raw.githubusercontent.com/BxNxM/micrOS/master/media/logo_mini.png) micrOS Packages 📦 v0.2
 
 # micrOS Packages Registry and Tools
 
