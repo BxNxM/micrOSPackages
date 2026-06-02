@@ -21,6 +21,9 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 | [sim800](./sim800/README.md) | SIM800C GSM modem interface. Call reveice, Test message receive/send. |
 | [garage_remote](./garage_remote/README.md) | Smart garage remote control with `phone_manager` |
 | [phone_manager](./phone_manager/README.md) | Phone number-based user management and access control. |
+| [color_sensor](./color_sensor/README.md) | TCS3472 RGB and ambient-light sensor integration with NeoPixel indicator support. |
+| [sound_event](./sound_event/README.md) | Trainable I2S microphone sound-event recognition with labeled datasets. |
+| [tof_distance](./tof_distance/README.md) | VL53L0X time-of-flight distance sensor integration. |
 | []() | Add your own. |
 
 
@@ -279,6 +282,17 @@ pacman install "https://github.com/BxNxM/micrOSPackages/blob/main/blinky_example
 - `ut_executor.py` runs package-local pytest suites from `<package>/tests`.
 - `serve_packages.py` provides a local `mip` server.
 - Load Modules must follow the `LM_*.py` naming pattern.
+
+
+# Improvement ideas
+
+```text
+- Cross compile packages with mpy-cross
+	- Adapt pacman to prioritize .mpy files
+
+- Add explicit tag/branch flag support for mip wrappers 
+```
+
 
 ```bash
 git push -u origin main

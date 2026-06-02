@@ -1,0 +1,15 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.0.1"
+    },
+    "url": "github:BxNxM/micrOSPackages/tof_distance",
+    "layout": {
+        "/modules": [
+            "LM_VL53L0X.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}

@@ -1,0 +1,22 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_tcs3472.py",
+            "github:BxNxM/micrOSPackages/color_sensor/package/LM_tcs3472.py"
+        ],
+        [
+            "color_sensor/__init__.py",
+            "github:BxNxM/micrOSPackages/color_sensor/package/__init__.py"
+        ],
+        [
+            "color_sensor/pacman.json",
+            "github:BxNxM/micrOSPackages/color_sensor/package/pacman.json"
+        ],
+        [
+            "color_sensor/shared.py",
+            "github:BxNxM/micrOSPackages/color_sensor/package/shared.py"
+        ]
+    ],
+    "deps": []
+}

@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_sound_event.py",
+            "github:BxNxM/micrOSPackages/sound_event/package/LM_sound_event.py"
+        ],
+        [
+            "sound_event/__init__.py",
+            "github:BxNxM/micrOSPackages/sound_event/package/__init__.py"
+        ],
+        [
+            "sound_event/pacman.json",
+            "github:BxNxM/micrOSPackages/sound_event/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

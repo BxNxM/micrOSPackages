@@ -1,0 +1,15 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.0.1"
+    },
+    "url": "github:BxNxM/micrOSPackages/color_sensor",
+    "layout": {
+        "/modules": [
+            "LM_tcs3472.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}

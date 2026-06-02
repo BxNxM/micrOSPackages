@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_VL53L0X.py",
+            "github:BxNxM/micrOSPackages/tof_distance/package/LM_VL53L0X.py"
+        ],
+        [
+            "tof_distance/__init__.py",
+            "github:BxNxM/micrOSPackages/tof_distance/package/__init__.py"
+        ],
+        [
+            "tof_distance/pacman.json",
+            "github:BxNxM/micrOSPackages/tof_distance/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}
