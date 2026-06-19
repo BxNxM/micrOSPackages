@@ -172,10 +172,17 @@ def _handle_alarm_command(command, phone):
 # --- Call / SMS handlers ---
 
 def _handle_call(call_params):
-    """Handle incoming call: reject, check user, open garage if allowed.
+    """Handle incoming call: reject with retry, check user, open garage if allowed.
     :param call_params dict: parsed call parameters from SIM800
     """
-    sim.reject_call()
+    # Retry reject to handle race with ongoing RING URCs
+    for _ in range(3):
+        resp = sim.reject_call()
+        if resp and b'OK' in resp:
+            break
+        time.sleep(0.3)
+    # Flush any remaining RING/CLIP data from UART buffer
+    sim.read_uart()
     caller = call_params.get('caller_number', '')
     result = users.get_user(phone=caller, book=_BOOK)
     if not result:
