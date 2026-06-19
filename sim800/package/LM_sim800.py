@@ -239,10 +239,14 @@ def _poll_uart():
 
 
 async def _run_listener():
+    """Async UART listener loop. Reads UART when RI interrupt signals data."""
     with micro_task(tag='sim800.listener') as my_task:
-        inst = Sim800.INSTANCE
         while _has_subscribers():
             try:
+                inst = Sim800.INSTANCE
+                if inst is None:
+                    await my_task.feed(sleep_ms=1000)
+                    continue
                 if inst._ri_triggered:
                     inst._ri_triggered = False
                     await my_task.feed(sleep_ms=50)
@@ -250,7 +254,7 @@ async def _run_listener():
                 await my_task.feed(sleep_ms=100)
             except Exception as e:
                 console(f"Listener error: {e}")
-                await my_task.feed(sleep_ms=100)
+                await my_task.feed(sleep_ms=1000)
         console("SIM800 listener stopped - no subscribers")
 
 
