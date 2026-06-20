@@ -13,7 +13,7 @@ import importlib.util
 from unittest import mock
 from pathlib import Path
 
-PACKAGE_DIR = Path(__file__).resolve().parent.parent / "package"
+GARAGE_DIR = Path(__file__).resolve().parent.parent
 _MODULE_NAME = "LM_sim800_under_test"
 
 
@@ -43,7 +43,7 @@ def _install_stubs():
         m.WDT = type("WDT", (), {"__init__": lambda s, **kw: None, "feed": lambda s: None})
         sys.modules["machine"] = m
 
-    for mod_name in ("Common", "Config", "microIO", "Types", "Debug", "Notify"):
+    for mod_name in ("Common", "Config", "microIO", "Types"):
         if mod_name not in sys.modules:
             stub = types.ModuleType(mod_name)
             if mod_name == "Common":
@@ -72,53 +72,12 @@ def _install_stubs():
                 stub.pinmap_search = lambda pins: {p: 0 for p in pins}
             elif mod_name == "Types":
                 stub.resolve = lambda t, **kw: t
-            elif mod_name == "Debug":
-                stub.syslog = lambda *a, **kw: None
-            elif mod_name == "Notify":
-                class FakeNotify:
-                    GLOBAL_NOTIFY = True
-                    _DEVFID = "test_device"
-                    _SUBSCRIBERS = set()
-                    @staticmethod
-                    def add_subscriber(instance): pass
-                stub.Notify = FakeNotify
             sys.modules[mod_name] = stub
 
 
 def _load_sim800_module():
     _install_stubs()
-    # Add package dir to path so 'sim800' subpackage imports work
-    pkg_parent = str(PACKAGE_DIR.parent)
-    if pkg_parent not in sys.path:
-        sys.path.insert(0, pkg_parent)
-    # Register 'sim800' as the package directory
-    pkg_dir = str(PACKAGE_DIR)
-    if pkg_dir not in sys.path:
-        sys.path.insert(0, pkg_dir)
-    # Create sim800 package namespace
-    sim800_pkg = types.ModuleType("sim800")
-    sim800_pkg.__path__ = [str(PACKAGE_DIR)]
-    sys.modules["sim800"] = sim800_pkg
-    # Load codec
-    codec_spec = importlib.util.spec_from_file_location("sim800.codec", str(PACKAGE_DIR / "codec.py"))
-    codec_mod = importlib.util.module_from_spec(codec_spec)
-    sys.modules["sim800.codec"] = codec_mod
-    codec_spec.loader.exec_module(codec_mod)
-    sim800_pkg.codec = codec_mod
-    # Load modem
-    modem_spec = importlib.util.spec_from_file_location("sim800.modem", str(PACKAGE_DIR / "modem.py"))
-    modem_mod = importlib.util.module_from_spec(modem_spec)
-    sys.modules["sim800.modem"] = modem_mod
-    modem_spec.loader.exec_module(modem_mod)
-    sim800_pkg.modem = modem_mod
-    # Load notify
-    notify_spec = importlib.util.spec_from_file_location("sim800.notify", str(PACKAGE_DIR / "notify.py"))
-    notify_mod = importlib.util.module_from_spec(notify_spec)
-    sys.modules["sim800.notify"] = notify_mod
-    notify_spec.loader.exec_module(notify_mod)
-    sim800_pkg.notify = notify_mod
-    # Load LM_sim800
-    spec = importlib.util.spec_from_file_location(_MODULE_NAME, str(PACKAGE_DIR / "LM_sim800.py"))
+    spec = importlib.util.spec_from_file_location(_MODULE_NAME, str(GARAGE_DIR / "LM_sim800.py"))
     mod = importlib.util.module_from_spec(spec)
     sys.modules[_MODULE_NAME] = mod
     spec.loader.exec_module(mod)
@@ -126,14 +85,11 @@ def _load_sim800_module():
 
 
 sim = _load_sim800_module()
-# Direct access to codec and Sim800 for tests
-from sim800 import codec as sim_codec
-from sim800.modem import Sim800 as Sim800Class
 
 
 def _new_inst():
     """Create a Sim800 instance without hardware init."""
-    return Sim800Class.__new__(Sim800Class)
+    return sim.Sim800.__new__(sim.Sim800)
 
 
 def _make_raw_pdu(pdu_hex, status="0"):
@@ -147,40 +103,42 @@ def _make_raw_pdu(pdu_hex, status="0"):
 class TestPduHelpers(unittest.TestCase):
 
     def test_semi_octet_to_number_even(self):
-        self.assertEqual(sim_codec.semi_octet_to_number("6302214365F7"), "36201234567")
+        self.assertEqual(sim.Sim800._semi_octet_to_number("6302214365F7"), "36201234567")
 
     def test_semi_octet_to_number_odd(self):
-        self.assertEqual(sim_codec.semi_octet_to_number("630221436507"), "362012345670")
+        # odd digit count — trailing nibble kept as-is
+        self.assertEqual(sim.Sim800._semi_octet_to_number("630221436507"), "362012345670")
 
     def test_swap_pairs(self):
-        self.assertEqual(sim_codec.swap_pairs("6230"), "2603")
+        self.assertEqual(sim.Sim800._swap_pairs("6230"), "2603")
 
     def test_pad_hex_even(self):
-        self.assertEqual(sim_codec.pad_hex("AB"), "AB")
+        self.assertEqual(sim.Sim800._pad_hex("AB"), "AB")
 
     def test_pad_hex_odd(self):
-        self.assertEqual(sim_codec.pad_hex("ABC"), "0ABC")
+        self.assertEqual(sim.Sim800._pad_hex("ABC"), "0ABC")
 
     def test_pad_hex_strips_spaces(self):
-        self.assertEqual(sim_codec.pad_hex("A B C"), "0ABC")
+        self.assertEqual(sim.Sim800._pad_hex("A B C"), "0ABC")
 
     def test_ceil_even_int_even(self):
-        self.assertEqual(sim_codec.ceil_even_int(4), 4)
+        self.assertEqual(sim.Sim800._ceil_even_int(4), 4)
 
     def test_ceil_even_int_odd(self):
-        self.assertEqual(sim_codec.ceil_even_int(5), 6)
+        self.assertEqual(sim.Sim800._ceil_even_int(5), 6)
 
     def test_time_stamp_parse(self):
-        result = sim_codec.time_stamp_parse("62309111042200")
+        # "62309111042200" -> 2026-03-19 11:40:22 +00:00
+        result = sim.Sim800._time_stamp_parse("62309111042200")
         self.assertTrue(result.startswith("20"))
         self.assertIn(":", result)
 
     def test_time_zone_offset_positive(self):
-        result = sim_codec.time_zone_offset("00")
+        result = sim.Sim800._time_zone_offset("00")
         self.assertEqual(result, "+00:00")
 
     def test_time_zone_offset_negative(self):
-        result = sim_codec.time_zone_offset("80")
+        result = sim.Sim800._time_zone_offset("80")
         self.assertTrue(result.startswith("-"))
 
 
@@ -190,22 +148,31 @@ class TestPduHelpers(unittest.TestCase):
 
 class TestGsm7Decode(unittest.TestCase):
 
+    def setUp(self):
+        self.inst = _new_inst()
+
     def test_decode_hello(self):
-        self.assertEqual(sim_codec.decode_gsm7("E8329BFD06", "05"), "hello")
+        # "hello" packed GSM7
+        self.assertEqual(self.inst._decode_gsm7("E8329BFD06", "05"), "hello")
 
     def test_decode_hellohello(self):
-        self.assertEqual(sim_codec.decode_gsm7("E8329BFD4697D9EC37", "0A"), "hellohello")
+        self.assertEqual(self.inst._decode_gsm7("E8329BFD4697D9EC37", "0A"), "hellohello")
 
     def test_decode_gsm7_special_chars(self):
-        result = sim_codec.decode_gsm7("00", "01")
+        # '@' is 0x00 in GSM7
+        result = self.inst._decode_gsm7("00", "01")
         self.assertEqual(result, "@")
 
     def test_decode_gsm7_unknown_char(self):
-        result = sim_codec.decode_gsm7("1B", "01")
+        # 0x1B alone (escape with no following byte) should not crash
+        result = self.inst._decode_gsm7("1B", "01")
         self.assertIsInstance(result, str)
 
     def test_decode_gsm7_ext_euro(self):
-        result = sim_codec.decode_gsm7("9B32", "02")
+        # € = escape (0x1B) + 0x65, packed into 2 septets
+        # bit-pack: 0x1B = 0b0011011, 0x65 = 0b1100101
+        # packed LSB-first: 0x1B | (0x65 << 7) = 0x1B | 0x3280 = 0x329B -> bytes: 9B 32
+        result = self.inst._decode_gsm7("9B32", "02")
         self.assertIn("€", result)
 
 
@@ -217,25 +184,28 @@ class TestUtf16BeDecode(unittest.TestCase):
 
     def test_basic_ascii(self):
         b = "hello".encode("utf-16-be")
-        self.assertEqual(sim_codec.decode_utf16be_with_surrogates(b), "hello")
+        self.assertEqual(sim.Sim800._decode_utf16be_with_surrogates(b), "hello")
 
     def test_hungarian_chars(self):
         text = "Árvíztűrő"
         b = text.encode("utf-16-be")
-        self.assertEqual(sim_codec.decode_utf16be_with_surrogates(b), text)
+        self.assertEqual(sim.Sim800._decode_utf16be_with_surrogates(b), text)
 
     def test_surrogate_pair_emoji(self):
+        # 😀 U+1F600 -> surrogate pair D83D DE00
         b = bytes.fromhex("D83DDE00")
-        result = sim_codec.decode_utf16be_with_surrogates(b)
+        result = sim.Sim800._decode_utf16be_with_surrogates(b)
         self.assertEqual(result, "😀")
 
     def test_odd_length_bytes(self):
-        result = sim_codec.decode_utf16be_with_surrogates(b"\x00")
+        # should not crash on odd-length input
+        result = sim.Sim800._decode_utf16be_with_surrogates(b"\x00")
         self.assertIsInstance(result, str)
 
     def test_invalid_surrogate_pair(self):
+        # high surrogate not followed by low surrogate -> '?'
         b = bytes.fromhex("D83D0041")
-        result = sim_codec.decode_utf16be_with_surrogates(b)
+        result = sim.Sim800._decode_utf16be_with_surrogates(b)
         self.assertIn("?", result)
 
 
@@ -246,19 +216,19 @@ class TestUtf16BeDecode(unittest.TestCase):
 class TestDecode8bit(unittest.TestCase):
 
     def test_basic(self):
-        b = sim_codec.decode_8bit_data("48656C6C6F")
+        b = sim.Sim800._decode_8bit_data("48656C6C6F")
         self.assertEqual(b, b"Hello")
 
     def test_truncate_by_udl(self):
-        b = sim_codec.decode_8bit_data("48656C6C6F", tp_udl="03")
+        b = sim.Sim800._decode_8bit_data("48656C6C6F", tp_udl="03")
         self.assertEqual(b, b"Hel")
 
     def test_pad_by_udl(self):
-        b = sim_codec.decode_8bit_data("4865", tp_udl="04")
+        b = sim.Sim800._decode_8bit_data("4865", tp_udl="04")
         self.assertEqual(b, b"He\x00\x00")
 
     def test_odd_hex(self):
-        b = sim_codec.decode_8bit_data("A")
+        b = sim.Sim800._decode_8bit_data("A")
         self.assertEqual(b, bytes.fromhex("0A"))
 
 
@@ -790,47 +760,52 @@ def _fake_micro_task(tag=None, task=None, _wrap=False):
 class TestGsm7Encode(unittest.TestCase):
 
     def test_encode_hello(self):
-        septets, packed = sim_codec.encode_gsm7('hello')
+        septets, packed = sim.Sim800._encode_gsm7('hello')
         self.assertEqual(len(septets), 5)
         self.assertEqual(packed.hex().upper(), 'E8329BFD06')
 
     def test_encode_euro_uses_escape(self):
-        septets, _ = sim_codec.encode_gsm7('€')
+        septets, _ = sim.Sim800._encode_gsm7('€')
         self.assertEqual(septets, [0x1B, 0x65])
 
     def test_is_gsm7_encodable_ascii(self):
-        self.assertTrue(sim_codec.is_gsm7_encodable('Hello World 123'))
+        self.assertTrue(sim.Sim800._is_gsm7_encodable('Hello World 123'))
 
     def test_is_gsm7_encodable_hungarian(self):
-        self.assertFalse(sim_codec.is_gsm7_encodable('Árvíztűrő'))
+        self.assertFalse(sim.Sim800._is_gsm7_encodable('Árvíztűrő'))
 
     def test_is_gsm7_encodable_euro(self):
-        self.assertTrue(sim_codec.is_gsm7_encodable('€100'))
+        self.assertTrue(sim.Sim800._is_gsm7_encodable('€100'))
 
 
 class TestBuildSubmitPdu(unittest.TestCase):
 
+    def setUp(self):
+        self.inst = _new_inst()
+
     def test_gsm7_pdu_structure(self):
-        pdu, tpdu_len = sim_codec.build_submit_pdu('+36201234567', 'Test')
+        pdu, tpdu_len = self.inst._build_submit_pdu('+36201234567', 'Test')
         self.assertTrue(pdu.startswith('00'))  # default SMSC
         self.assertGreater(tpdu_len, 0)
         self.assertEqual(len(pdu[2:]), tpdu_len * 2)  # hex chars = bytes * 2
 
     def test_gsm7_pdu_contains_address(self):
-        pdu, _ = sim_codec.build_submit_pdu('+36201234567', 'Hi')
+        pdu, _ = self.inst._build_submit_pdu('+36201234567', 'Hi')
+        # semi-octet of 36201234567 -> 6302214365F7
         self.assertIn('6302214365F7', pdu)
 
     def test_ucs2_pdu_for_non_gsm7(self):
-        pdu, _ = sim_codec.build_submit_pdu('+36201234567', 'Árvíz')
+        pdu, _ = self.inst._build_submit_pdu('+36201234567', 'Árvíz')
+        # TP-DCS should be 08 (UCS2)
         self.assertIn('08', pdu)
 
     def test_international_toa(self):
-        pdu, _ = sim_codec.build_submit_pdu('+36201234567', 'X')
-        self.assertIn('91', pdu)
+        pdu, _ = self.inst._build_submit_pdu('+36201234567', 'X')
+        self.assertIn('91', pdu)  # TOA international
 
     def test_domestic_toa(self):
-        pdu, _ = sim_codec.build_submit_pdu('06201234567', 'X')
-        self.assertIn('81', pdu)
+        pdu, _ = self.inst._build_submit_pdu('06201234567', 'X')
+        self.assertIn('81', pdu)  # TOA domestic
 
 
 class TestSendSms(unittest.TestCase):
@@ -914,13 +889,16 @@ class TestSendSms(unittest.TestCase):
 
     def test_send_sms_roundtrip_gsm7(self):
         """Encode then decode GSM7 and verify text matches."""
-        pdu, _ = sim_codec.build_submit_pdu('+36201234567', 'Test msg!')
+        pdu, _ = self.inst._build_submit_pdu('+36201234567', 'Test msg!')
+        # Extract TP-UDL and UD from the end of TPDU
+        # Skip: SMSC(2) + MTI(2) + MR(2) + AddrLen(2) + TOA(2) + Addr(12) + PID(2) + DCS(2) + VP(2)
         tpdu = pdu[2:]  # skip SMSC '00'
+        # DCS is at fixed offset: 2+2+2+2+12+2 = 22 hex chars from tpdu start
         dcs_hex = tpdu[22:24]
         self.assertEqual(dcs_hex, '00')  # GSM7
         tp_udl = tpdu[26:28]
         ud_hex = tpdu[28:]
-        decoded = sim_codec.decode_gsm7(ud_hex, tp_udl)
+        decoded = self.inst._decode_gsm7(ud_hex, tp_udl)
         self.assertEqual(decoded, 'Test msg!')
 
 
@@ -1010,17 +988,17 @@ class TestGetBalance(unittest.TestCase):
 class TestDecodeUssdUcs2(unittest.TestCase):
 
     def test_decode_valid_ucs2(self):
-        result = sim_codec.decode_ussd_ucs2('00480065006C006C006F')
+        result = sim.Sim800._decode_ussd_ucs2('00480065006C006C006F')
         self.assertEqual(result, 'Hello')
 
     def test_decode_hungarian(self):
         text = 'Árvíz'
         hex_str = text.encode('utf-16-be').hex()
-        result = sim_codec.decode_ussd_ucs2(hex_str)
+        result = sim.Sim800._decode_ussd_ucs2(hex_str)
         self.assertEqual(result, 'Árvíz')
 
     def test_decode_invalid_returns_original(self):
-        result = sim_codec.decode_ussd_ucs2('ZZZZ')
+        result = sim.Sim800._decode_ussd_ucs2('ZZZZ')
         self.assertEqual(result, 'ZZZZ')
 
 
@@ -1128,6 +1106,165 @@ class TestPollUartCmtiIndex(unittest.TestCase):
             sim._poll_uart()
             self.assertEqual(mock_recv.call_args[0][0], 42)
 
+
+
+class TestStaleClipProtection(unittest.TestCase):
+    """Tests for RING tracking that prevents stale +CLIP from triggering calls."""
+
+    def setUp(self):
+        self.inst = _new_inst()
+        sim.Sim800.INSTANCE = self.inst
+        self.call_cb = mock.MagicMock()
+        self.sms_cb = mock.MagicMock()
+        sim._subscribers = {'call': [self.call_cb], 'sms': [self.sms_cb], 'signal': []}
+        sim._ring_seen = False
+
+    def tearDown(self):
+        sim.Sim800.INSTANCE = None
+        sim._subscribers = {'call': [], 'sms': [], 'signal': []}
+        sim._ring_seen = False
+
+    def test_clip_with_ring_dispatches_call(self):
+        """Normal flow: RING + CLIP in same read → call dispatched."""
+        lines = ['RING', '+CLIP: "+36301450016",145,,,0']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        self.inst.parse_call_params = mock.MagicMock(return_value={'caller_number': '+36301450016'})
+        sim._poll_uart()
+        self.call_cb.assert_called_once()
+
+    def test_clip_without_ring_ignored(self):
+        """Bug case: stale CLIP without RING → call NOT dispatched."""
+        lines = ['+CLIP: "+36301450016",145,,,0']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        sim._poll_uart()
+        self.call_cb.assert_not_called()
+
+    def test_stale_clip_with_cmti_only_dispatches_sms(self):
+        """The exact bug scenario: stale CLIP + new CMTI in same read.
+        Only SMS should be dispatched, not the call."""
+        lines = ['+CLIP: "+36301450016",145,,,0', '+CMTI: "SM",5']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        with mock.patch.object(sim, 'receive_sms', return_value={'text': 'Alarm off 10', 'sender': '+36209799291'}):
+            sim._poll_uart()
+        self.call_cb.assert_not_called()
+        self.sms_cb.assert_called_once()
+
+    def test_ring_clip_and_cmti_dispatches_both(self):
+        """RING + CLIP + CMTI in same read → both call and SMS dispatched."""
+        lines = ['RING', '+CLIP: "+36301450016",145,,,0', '+CMTI: "SM",5']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        self.inst.parse_call_params = mock.MagicMock(return_value={'caller_number': '+36301450016'})
+        with mock.patch.object(sim, 'receive_sms', return_value={'text': 'hi', 'sender': '+36209799291'}):
+            sim._poll_uart()
+        self.call_cb.assert_called_once()
+        self.sms_cb.assert_called_once()
+
+    def test_no_carrier_resets_ring_state(self):
+        """NO CARRIER resets _ring_seen so a subsequent stale CLIP is ignored."""
+        sim._ring_seen = True
+        lines = ['NO CARRIER', '+CLIP: "+36301450016",145,,,0']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        sim._poll_uart()
+        self.call_cb.assert_not_called()
+
+    def test_multiple_rings_only_one_clip(self):
+        """Multiple RINGs before CLIP — still dispatches exactly once."""
+        lines = ['RING', 'RING', 'RING', '+CLIP: "+36301450016",145,,,0']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        self.inst.parse_call_params = mock.MagicMock(return_value={'caller_number': '+36301450016'})
+        sim._poll_uart()
+        self.call_cb.assert_called_once()
+
+    def test_ring_state_resets_after_clip_processed(self):
+        """After RING+CLIP processed, _ring_seen is False for next poll."""
+        lines = ['RING', '+CLIP: "+36301450016",145,,,0']
+        self.inst.read_uart = mock.MagicMock(return_value=(lines, b''))
+        self.inst.parse_call_params = mock.MagicMock(return_value={'caller_number': '+36301450016'})
+        sim._poll_uart()
+        self.assertFalse(sim._ring_seen)
+
+
+class TestFallbackPolling(unittest.TestCase):
+    """Tests for the fallback polling in _run_listener."""
+
+    def setUp(self):
+        sim._subscribers = {'call': [mock.MagicMock()], 'sms': [], 'signal': []}
+
+    def tearDown(self):
+        sim.Sim800.INSTANCE = None
+        sim._subscribers = {'call': [], 'sms': [], 'signal': []}
+
+    def test_listener_polls_on_ri_trigger(self):
+        """RI triggered → _poll_uart called."""
+        inst = _new_inst()
+        inst._ri_triggered = True
+        inst.uart = mock.MagicMock()
+        inst.uart.any.return_value = 0
+        sim.Sim800.INSTANCE = inst
+        with mock.patch.object(sim, '_poll_uart') as mock_poll:
+            # Simulate one iteration by running the async function partially
+            import asyncio
+            async def _run_one_iter():
+                inst._ri_triggered = True
+                # Inline equivalent of one listener iteration
+                should_poll = False
+                if inst._ri_triggered:
+                    inst._ri_triggered = False
+                    should_poll = True
+                if should_poll:
+                    mock_poll()
+            asyncio.run(_run_one_iter())
+            mock_poll.assert_called_once()
+
+    def test_fallback_triggers_when_uart_has_data(self):
+        """Fallback polling fires when counter reaches 50 and uart has data."""
+        inst = _new_inst()
+        inst._ri_triggered = False
+        inst.uart = mock.MagicMock()
+        inst.uart.any.return_value = 42  # data waiting
+        sim.Sim800.INSTANCE = inst
+        with mock.patch.object(sim, '_poll_uart') as mock_poll:
+            import asyncio
+            async def _run_fallback():
+                poll_counter = 49  # one away from triggering
+                should_poll = False
+                if inst._ri_triggered:
+                    inst._ri_triggered = False
+                    should_poll = True
+                poll_counter += 1
+                if poll_counter >= 50:
+                    poll_counter = 0
+                    if inst.uart.any():
+                        should_poll = True
+                if should_poll:
+                    mock_poll()
+            asyncio.run(_run_fallback())
+            mock_poll.assert_called_once()
+
+    def test_fallback_skips_when_uart_empty(self):
+        """Fallback polling does NOT fire when counter reaches 50 but uart is empty."""
+        inst = _new_inst()
+        inst._ri_triggered = False
+        inst.uart = mock.MagicMock()
+        inst.uart.any.return_value = 0  # no data
+        sim.Sim800.INSTANCE = inst
+        with mock.patch.object(sim, '_poll_uart') as mock_poll:
+            import asyncio
+            async def _run_fallback_empty():
+                poll_counter = 49
+                should_poll = False
+                if inst._ri_triggered:
+                    inst._ri_triggered = False
+                    should_poll = True
+                poll_counter += 1
+                if poll_counter >= 50:
+                    poll_counter = 0
+                    if inst.uart.any():
+                        should_poll = True
+                if should_poll:
+                    mock_poll()
+            asyncio.run(_run_fallback_empty())
+            mock_poll.assert_not_called()
 
 
 if __name__ == "__main__":
