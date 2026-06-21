@@ -82,7 +82,7 @@ class Sim800:
         responses.append(self.send_command('AT+CNMI=2,1,0,0,0'))                           # Forward SMS URC immediately (not buffered)
         responses.append(self.send_command('AT+CFGRI=1'))                               # Enable RI pin for incoming data
 
-    def connect(self, retries=10, retry_delay=5):
+    def connect(self, retries=3, retry_delay=3):
         """Connect to modem, unlock SIM and initialize.
         :param retries int: number of AT retries
         :param retry_delay int: seconds between retries
