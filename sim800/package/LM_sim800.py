@@ -1023,8 +1023,9 @@ _ring_seen = False
 
 
 async def _run_listener():
-    """Async UART listener loop. Reads UART on RI trigger + fallback polling."""
+    """Async UART listener loop. Reads UART on RI trigger + fallback polling + SIM check."""
     poll_counter = 0
+    sim_check_counter = 0
     with micro_task(tag='sim800.listener') as my_task:
         while _has_subscribers():
             try:
@@ -1037,19 +1038,48 @@ async def _run_listener():
                     inst._ri_triggered = False
                     should_poll = True
                     await my_task.feed(sleep_ms=50)
-                # Fallback: poll every ~5s (50 * 100ms) to catch missed RI
+                # Fallback: poll every ~3s (30 * 100ms) in case RI missed
                 poll_counter += 1
-                if poll_counter >= 50:
+                if poll_counter >= 30:
                     poll_counter = 0
                     if inst.uart.any():
                         should_poll = True
                 if should_poll:
                     _poll_uart()
+                # SIM memory check every ~15s for missed CMTI
+                sim_check_counter += 1
+                if sim_check_counter >= 150:
+                    sim_check_counter = 0
+                    _check_unread_sms()
                 await my_task.feed(sleep_ms=100)
             except Exception as e:
                 console(f"Listener error: {e}")
                 await my_task.feed(sleep_ms=1000)
         console("SIM800 listener stopped - no subscribers")
+
+def _check_unread_sms():
+    """Check SIM memory for unread SMS and process them."""
+    try:
+        inst = Sim800.INSTANCE
+        if inst is None:
+            return
+        resp = inst.send_command('AT+CMGL=0', timeout=3000)
+        if not resp or b'+CMGL' not in resp:
+            return
+        text = resp.decode()
+        for line in text.split('\r\n'):
+            if line.startswith('+CMGL:'):
+                try:
+                    index = int(line.split(':')[1].split(',')[0].strip())
+                    sms = receive_sms(index)
+                    if sms:
+                        _dispatch('sms', sms)
+                except (IndexError, ValueError):
+                    continue
+    except Exception as e:
+        console(f"_check_unread_sms error: {e}")
+
+
 
 def _ensure_listener():
     """Start listener if not already running."""

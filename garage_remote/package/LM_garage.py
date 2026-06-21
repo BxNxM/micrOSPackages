@@ -12,7 +12,7 @@ from Types import resolve
 _BOOK = 'garage'
 
 # Alarm session management
-MAX_ALARM_MINUTES = 60
+MAX_ALARM_MINUTES = 30
 ALARM_CHUNK_MINUTES = 7
 _alarm_sessions = {}
 _alarm_observer_task = None
@@ -240,13 +240,32 @@ def load(pin_code, phonebook='garage_users.json'):
     """
     _instantiate_relay()
     users.load(json_file=phonebook, book=_BOOK)
-    sim.load(pin_code=pin_code)
-    # Flush stale UART data before subscribing
+    result = sim.load(pin_code=pin_code)
+    if 'failed' in result.lower():
+        # SIM800 not ready yet — start background retry
+        micro_task(tag='garage.sim800_retry', task=_retry_sim800_load(pin_code))
+        _logger("Garage module started (SIM800 connecting in background)", "WARN")
+        return 'Garage module started (SIM800 pending).'
+    # SIM800 ready — subscribe immediately
     sim.read_uart()
     sim.subscribe('call', _handle_call)
     sim.subscribe('sms', _handle_sms)
     _logger("Garage module started", "INFO")
     return 'Garage module started.'
+
+async def _retry_sim800_load(pin_code):
+    """Background task: retry sim800 load until success, then subscribe."""
+    with micro_task(tag='garage.sim800_retry') as my_task:
+        for attempt in range(12):  # 12 * 10s = 2 min max
+            await my_task.feed(sleep_ms=10_000)
+            result = sim.load(pin_code=pin_code)
+            if 'failed' not in result.lower():
+                sim.read_uart()
+                sim.subscribe('call', _handle_call)
+                sim.subscribe('sms', _handle_sms)
+                _logger(f"SIM800 connected after {(attempt+1)*10}s", "INFO")
+                return
+        _logger("SIM800 failed after 2 min of retries", "ERROR")
 
 def unload():
     """Gracefully stop garage module: unsubscribe events, clear alarm sessions.
