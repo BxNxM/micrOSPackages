@@ -1039,17 +1039,17 @@ async def _run_listener():
                     inst._ri_triggered = False
                     should_poll = True
                     await my_task.feed(sleep_ms=50)
-                # Fallback: poll every ~3s (30 * 100ms) in case RI missed
+                # Fallback: poll every ~10s (100 * 100ms) in case RI missed
                 poll_counter += 1
-                if poll_counter >= 30:
+                if poll_counter >= 100:
                     poll_counter = 0
                     if inst.uart.any():
                         should_poll = True
                 if should_poll:
                     _poll_uart()
-                # SIM memory check every ~15s for missed CMTI
+                # SIM memory check every ~60s for missed CMTI (safety net)
                 sim_check_counter += 1
-                if sim_check_counter >= 150:
+                if sim_check_counter >= 600:
                     sim_check_counter = 0
                     _check_unread_sms()
                 await my_task.feed(sleep_ms=100)
