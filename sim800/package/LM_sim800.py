@@ -81,7 +81,7 @@ class Sim800:
         responses.append(self.send_command('AT+CSQ'))                                   # Check RSSI
         responses.append(self.send_command('AT+CFGRI=1'))                               # Enable RI pin for incoming data
 
-    def connect(self, retries=5, retry_delay=2):
+    def connect(self, retries=10, retry_delay=5):
         """Connect to modem, unlock SIM and initialize.
         :param retries int: number of AT retries
         :param retry_delay int: seconds between retries
@@ -89,7 +89,8 @@ class Sim800:
         """
         responses = []
         try:
-            self.uart = UART(self.uart_no, baudrate=self.baudrate, tx=self.tx_pin, rx=self.rx_pin)
+            if not hasattr(self, 'uart') or self.uart is None:
+                self.uart = UART(self.uart_no, baudrate=self.baudrate, tx=self.tx_pin, rx=self.rx_pin)
             for attempt in range(retries):
                 resp = self.send_command('AT')
                 responses.append(resp)
@@ -919,6 +920,13 @@ def load(pin_code=None):
         else:
             Sim800.INSTANCE = None
             return 'Sim800 failed.'
+    else:
+        # Instance exists but may have lost connection — retry without re-creating UART
+        if Sim800.INSTANCE.connect():
+            return 'Sim800 reconnected.'
+        else:
+            Sim800.INSTANCE = None
+            return 'Sim800 reconnect failed.'
     return 'Sim800 already running.'
 
 def _has_subscribers():
