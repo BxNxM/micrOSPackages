@@ -1,0 +1,22 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_mh_z19c.py",
+            "github:BxNxM/micrOSPackages/co2/package/LM_mh_z19c.py"
+        ],
+        [
+            "LM_mq135.py",
+            "github:BxNxM/micrOSPackages/co2/package/LM_mq135.py"
+        ],
+        [
+            "co2/__init__.py",
+            "github:BxNxM/micrOSPackages/co2/package/__init__.py"
+        ],
+        [
+            "co2/pacman.json",
+            "github:BxNxM/micrOSPackages/co2/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

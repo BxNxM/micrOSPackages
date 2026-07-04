@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "qr_code/__init__.py",
+            "github:BxNxM/micrOSPackages/qr_code/package/__init__.py"
+        ],
+        [
+            "qr_code/pacman.json",
+            "github:BxNxM/micrOSPackages/qr_code/package/pacman.json"
+        ],
+        [
+            "qr_code/qr_code.py",
+            "github:BxNxM/micrOSPackages/qr_code/package/qr_code.py"
+        ]
+    ],
+    "deps": []
+}

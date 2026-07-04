@@ -11,20 +11,22 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 
 # 📦 Package Catalog
 
-| Project | Short Description |
-| --- | --- |
-| [blinky_example](./blinky_example/README.md) | Simple package example. Implements basic `Pin.OUT` operations. |
-| [async_mqtt](./async_mqtt/README.md) | Async MQTT client with micrOS Notifications integration. |
-| [async_oledui](./async_oledui/README.md) | SSD1306 and SH1106 OLED plug-and-play GUI with trackball support. |
-| [neopixel_matrix](./neopixel_matrix/README.md) | Neopixel 8x8 LED matrix animations and web control. |
-| [keychaindemo](./keychaindemo/README.md) | 16x32 SSD1306 OLED ESP32-C3 mini keychain demo with DS18 temperature sensor. |
-| [sim800](./sim800/README.md) | SIM800C GSM modem interface. Call reveice, Test message receive/send. |
-| [garage_remote](./garage_remote/README.md) | Smart garage remote control with `phone_manager` |
-| [phone_manager](./phone_manager/README.md) | Phone number-based user management and access control. |
-| [color_sensor](./color_sensor/README.md) | TCS3472 RGB and ambient-light sensor integration with NeoPixel indicator support. |
-| [sound_event](./sound_event/README.md) | Trainable I2S microphone sound-event recognition with labeled datasets. |
-| [tof_distance](./tof_distance/README.md) | VL53L0X time-of-flight distance sensor integration. |
-| []() | Add your own. |
+| Project | Load module(s) | Short description |
+| --- | --- | --- |
+| [alarm_system](./alarm_system/README.md) | `alarm_system` | Distributed alarm system with local and MQTT zones, event logging, and supervision. |
+| [async_mqtt](./async_mqtt/README.md) | `mqtt_client` | Async MQTT client with micrOS Notifications integration. |
+| [async_oledui](./async_oledui/README.md) | `oledui` | SSD1306 and SH1106 OLED GUI with trackball support. |
+| [blinky_example](./blinky_example/README.md) | `blinky` | Minimal package example implementing basic `Pin.OUT` operations. |
+| [co2](./co2/README.md) | `mh_z19c`<br>`mq135` | MH-Z19 NDIR CO2 and MQ-135 air-quality sensor integrations. |
+| [color_sensor](./color_sensor/README.md) | `tcs3472` | TCS3472 RGB and ambient-light sensor with NeoPixel indicator support. |
+| [garage_remote](./garage_remote/README.md) | `garage` | Smart garage remote control integrated with `phone_manager`. |
+| [keychaindemo](./keychaindemo/README.md) | `keychain` | ESP32-C3 OLED keychain demo with temperature sensing and NeoPixel control. |
+| [neopixel_matrix](./neopixel_matrix/README.md) | `neomatrix` | NeoPixel matrix animations, frame playback, and web control. |
+| [phone_manager](./phone_manager/README.md) | `users` | Phone number-based user management and access control. |
+| [qr_code](./qr_code/README.md) | — | Standalone QR Code generator for CPython and MicroPython. |
+| [sim800](./sim800/README.md) | `sim800`<br>`sim800_http`<br>`sim800mqtt` | SIM800C voice, SMS, USSD, HTTP, and MQTT integration. |
+| [sound_event](./sound_event/README.md) | `sound_event` | Trainable I2S microphone sound-event recognition with labeled datasets. |
+| [tof_distance](./tof_distance/README.md) | `VL53L0X` | VL53L0X time-of-flight distance sensor integration. |
 
 
 ---
