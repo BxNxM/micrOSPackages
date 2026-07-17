@@ -1,0 +1,10 @@
+{
+    "version": "1.0.0",
+    "urls": [
+        [
+            "LM_rcwl1670.py",
+            "github:fmandl/micrOSPackages/rcwl1670/package/LM_rcwl1670.py"
+        ]
+    ],
+    "deps": []
+}

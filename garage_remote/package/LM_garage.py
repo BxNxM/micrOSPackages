@@ -12,7 +12,7 @@ from Types import resolve
 _BOOK = 'garage'
 
 # Alarm session management
-MAX_ALARM_MINUTES = 30
+MAX_ALARM_MINUTES = 60
 ALARM_CHUNK_MINUTES = 7
 _alarm_sessions = {}
 _alarm_observer_task = None
@@ -172,14 +172,10 @@ def _handle_alarm_command(command, phone):
 # --- Call / SMS handlers ---
 
 def _handle_call(call_params):
-    """Handle incoming call: reject, flush, check user, open garage if allowed.
+    """Handle incoming call: reject, check user, open garage if allowed.
     :param call_params dict: parsed call parameters from SIM800
     """
-    # Reject: send ATH directly, don't wait for clean OK (RING URCs interfere)
-    sim.send_command('ATH', timeout=500)
-    time.sleep(0.5)
-    # Flush all remaining RING/CLIP/NO CARRIER data
-    sim.read_uart()
+    sim.reject_call()
     caller = call_params.get('caller_number', '')
     result = users.get_user(phone=caller, book=_BOOK)
     if not result:
@@ -237,32 +233,13 @@ def load(pin_code, phonebook='garage_users.json'):
     """
     _instantiate_relay()
     users.load(json_file=phonebook, book=_BOOK)
-    result = sim.load(pin_code=pin_code)
-    if 'failed' in result.lower():
-        # SIM800 not ready yet — start background retry
-        micro_task(tag='garage.sim800_retry', task=_retry_sim800_load(pin_code))
-        _logger("Garage module started (SIM800 connecting in background)", "WARN")
-        return 'Garage module started (SIM800 pending).'
-    # SIM800 ready — subscribe immediately
+    sim.load(pin_code=pin_code)
+    # Flush stale UART data before subscribing
     sim.read_uart()
     sim.subscribe('call', _handle_call)
     sim.subscribe('sms', _handle_sms)
     _logger("Garage module started", "INFO")
     return 'Garage module started.'
-
-async def _retry_sim800_load(pin_code):
-    """Background task: retry sim800 load until success, then subscribe."""
-    with micro_task(tag='garage.sim800_retry') as my_task:
-        for attempt in range(12):  # 12 * 10s = 2 min max
-            await my_task.feed(sleep_ms=10_000)
-            result = sim.load(pin_code=pin_code)
-            if 'failed' not in result.lower():
-                sim.read_uart()
-                sim.subscribe('call', _handle_call)
-                sim.subscribe('sms', _handle_sms)
-                _logger(f"SIM800 connected after {(attempt+1)*10}s", "INFO")
-                return
-        _logger("SIM800 failed after 2 min of retries", "ERROR")
 
 def unload():
     """Gracefully stop garage module: unsubscribe events, clear alarm sessions.
