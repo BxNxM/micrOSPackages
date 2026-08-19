@@ -12,6 +12,7 @@ from neopixel_matrix.file_player import file_frame_gen, valid_file_name
 class NeoPixelMatrix(AnimationPlayer):
     INSTANCE = None
     DEFAULT_COLOR = (100, 23, 0)  # Default color for the matrix
+    DEFAULT_BRIGHTNESS = 20
 
     def __init__(self, width: int = 8, height: int = 8, pin: int = 0):
         super().__init__(tag="neomatrix")
@@ -20,7 +21,7 @@ class NeoPixelMatrix(AnimationPlayer):
         self.num_pixels = width * height
         self.pixels = NeoPixel(Pin(pin, Pin.OUT), self.num_pixels)
         self._color_buffer = [(0, 0, 0)] * self.num_pixels      # Store original RGB values
-        self._brightness = 0.20                                 # Brightness level, default 20%
+        self._brightness = NeoPixelMatrix.DEFAULT_BRIGHTNESS / 100.0
         NeoPixelMatrix.INSTANCE = self
 
     def update(self, *data):
@@ -275,10 +276,11 @@ def status():
     """
     Get the current status of the matrix
     """
-    matrix = load()
+    matrix = NeoPixelMatrix.INSTANCE
     r, g, b = NeoPixelMatrix.DEFAULT_COLOR
-    br = matrix._brightness
-    return {'r': r, 'g': g, 'b': b, 'br': int(br*100)}
+    br = NeoPixelMatrix.DEFAULT_BRIGHTNESS if matrix is None else int(matrix._brightness * 100 + 0.5)
+    state = 1 if br > 0 and (r > 0 or g > 0 or b > 0) else 0
+    return {'R': r, 'G': g, 'B': b, 'S': state, 'BR': br}
 
 
 # -----------------------------------------------------------------------------
@@ -326,4 +328,4 @@ def help(widgets=False):
                      'SLIDER control speed_ms=<1-200> bt_draw=None',
                      'draw_colormap bitmap=[(0,0,(10,2,0)),(x,y,color),...]',
                      'get_colormap',
-                     'status'), widgets=widgets)
+                     'STATUS status'), widgets=widgets)

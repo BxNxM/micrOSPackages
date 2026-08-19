@@ -14,7 +14,7 @@ pacman uninstall "neopixel_matrix"
 
 - Package files: `/lib/neopixel_matrix`
 - Load module: `/modules/LM_neomatrix.py`
-- Web asset: `/web/matrix_draw.html`
+- Web assets: `/web/matrix_draw.html`, `/web/matrix_draw.js`
 - Data animations: `/data/<file>.jsonl`
 
 ## Usage
