@@ -24,6 +24,7 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 | [neopixel_matrix](./neopixel_matrix/README.md) | `neomatrix` | NeoPixel matrix animations, frame playback, and web control. |
 | [phone_manager](./phone_manager/README.md) | `users` | Phone number-based user management and access control. |
 | [qr_code](./qr_code/README.md) | — | Standalone QR Code generator for CPython and MicroPython. |
+| [ultrasonic_distance](./ultrasonic_distance/README.md) | `hcsr04`<br>`rcwl1670` | HC-SR04 and RCWL-1670 ultrasonic trigger/echo distance sensors. |
 | [sim800](./sim800/README.md) | `sim800`<br>`sim800_http`<br>`sim800mqtt` | SIM800C voice, SMS, USSD, HTTP, and MQTT integration. |
 | [sound_event](./sound_event/README.md) | `sound_event` | Trainable I2S microphone sound-event recognition with labeled datasets. |
 | [tof_distance](./tof_distance/README.md) | `VL53L0X` | VL53L0X time-of-flight distance sensor integration. |

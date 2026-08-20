@@ -1,0 +1,26 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_hcsr04.py",
+            "github:BxNxM/micrOSPackages/ultrasonic_distance/package/LM_hcsr04.py"
+        ],
+        [
+            "LM_rcwl1670.py",
+            "github:BxNxM/micrOSPackages/ultrasonic_distance/package/LM_rcwl1670.py"
+        ],
+        [
+            "ultrasonic_distance/__init__.py",
+            "github:BxNxM/micrOSPackages/ultrasonic_distance/package/__init__.py"
+        ],
+        [
+            "ultrasonic_distance/pacman.json",
+            "github:BxNxM/micrOSPackages/ultrasonic_distance/package/pacman.json"
+        ],
+        [
+            "ultrasonic_distance/trigger_echo.py",
+            "github:BxNxM/micrOSPackages/ultrasonic_distance/package/trigger_echo.py"
+        ]
+    ],
+    "deps": []
+}

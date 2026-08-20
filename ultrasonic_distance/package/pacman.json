@@ -1,0 +1,16 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.0.1"
+    },
+    "url": "github:BxNxM/micrOSPackages/ultrasonic_distance",
+    "layout": {
+        "/modules": [
+            "LM_hcsr04.py",
+            "LM_rcwl1670.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}
