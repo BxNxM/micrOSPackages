@@ -1,3 +1,5 @@
+![<app_name> illustration](./media/<app_name>.png?raw=true)
+
 # 📦 micrOS Application: <package-app-name>
 
 One-line summary of the package.

@@ -1,6 +1,6 @@
-# micrOS Application: async\_mqtt
+![app_icn](./media/mqtt_client.png)
 
-![app_icn](./mqtt.png)
+# micrOS Application: async\_mqtt
 
 Async MQTT client for micrOS devices. It connects to a broker, subscribes to device topics, runs micrOS commands from incoming messages, and publishes JSON responses.
 

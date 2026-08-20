@@ -99,6 +99,9 @@ def create_package(package, module):
     # 3. Rename LM_app.py to LM_<module>.py
     print(f"⭐️[4/7] Rename LM_app.py -> LM_{module}.py")
     Path(target_package_dir / "LM_app.py").rename(target_package_dir / f"LM_{module}.py")
+    template_media = target / "media" / "app.png"
+    if template_media.is_file():
+        template_media.rename(target / "media" / f"{module}.png")
     # 4. Generate mip mapping first, then derive micrOS lifecycle metadata from it
     print(f"⭐️[5/7] Generate package metadata")
     update_package(target_package_dir, package)

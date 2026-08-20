@@ -1,3 +1,5 @@
+![app_icn](./media/alarm_system.png)
+
 # micrOS Application: alarm_system
 
 Distributed alarm system for micrOS devices. Manages zones, state machine, and action dispatch via MQTT. Supports local GPIO sensors, remote MQTT zones, topic watchers, event logging, supervision, and more. Inspired by professional alarm panels (Ajax, Paradox).
