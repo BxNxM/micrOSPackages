@@ -20,8 +20,7 @@ const configFields = {
 };
 
 function apiPath() {
-  const path = window.location.pathname || "";
-  return path.startsWith("/irrigation") ? "/irrigation/api" : "/aqua/api";
+  return "/aqua/api";
 }
 
 function byId(id) {

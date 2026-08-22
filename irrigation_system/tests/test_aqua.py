@@ -141,7 +141,9 @@ class TestAquaSkeleton(unittest.TestCase):
     def test_default_status_has_tank_and_flow_math(self):
         data = self.aqua.status()
 
-        self.assertEqual(data["endpoints"]["ui"], "/aqua")
+        self.assertEqual(data["endpoints"]["ui"], "/aqua/ui")
+        self.assertEqual(data["endpoints"]["api"], "/aqua/api")
+        self.assertNotIn("alias", data["endpoints"])
         self.assertEqual(data["config"]["level_module"], "manual")
         self.assertEqual(data["level_sensor"]["source"], "manual")
         self.assertEqual(data["tank"]["capacity_l"], 20.0)
@@ -296,7 +298,17 @@ class TestAquaSkeleton(unittest.TestCase):
 
     def test_web_api_contract(self):
         self.aqua.load()
-        callback = sys.modules["Common"].ENDPOINTS[("aqua/api", "POST")]
+        endpoints = sys.modules["Common"].ENDPOINTS
+
+        self.assertEqual(endpoints[("aqua/ui", "GET")], "irrigation_system/aqua.html")
+        self.assertIn(("aqua/api", "GET"), endpoints)
+        self.assertIn(("aqua/api", "POST"), endpoints)
+        self.assertNotIn(("aqua", "GET"), endpoints)
+        self.assertNotIn(("irrigation", "GET"), endpoints)
+        self.assertNotIn(("irrigation/api", "GET"), endpoints)
+        self.assertNotIn(("irrigation/api", "POST"), endpoints)
+
+        callback = endpoints[("aqua/api", "POST")]
         content_type, payload = callback(
             {},
             json.dumps({

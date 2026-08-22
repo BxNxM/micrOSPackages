@@ -57,12 +57,9 @@ def _register_web():
     global _WEB_READY
     if _WEB_READY:
         return True
-    web_endpoint("aqua", "irrigation_system/aqua.html")
-    web_endpoint("irrigation", "irrigation_system/aqua.html")
+    web_endpoint("aqua/ui", "irrigation_system/aqua.html")
     web_endpoint("aqua/api", _api_get)
     web_endpoint("aqua/api", _api_post, "POST")
-    web_endpoint("irrigation/api", _api_get)
-    web_endpoint("irrigation/api", _api_post, "POST")
     _WEB_READY = True
     return True
 
@@ -84,9 +81,8 @@ def _dashboard_state(measure=False):
         "level_sensor": monitor["level_sensor"],
         "task": pump["task"],
         "endpoints": {
-            "ui": "/aqua",
+            "ui": "/aqua/ui",
             "api": "/aqua/api",
-            "alias": "/irrigation",
         },
     }
 
@@ -98,7 +94,7 @@ def load(web=True, pump_pin=None):
     actuators.load(monitoring.CONFIG, pump_pin=pump_pin)
     if web:
         _register_web()
-    return "Aqua irrigation skeleton loaded. UI: /aqua"
+    return "Aqua irrigation system loaded. Endpoints: /aqua/ui and /aqua/api"
 
 
 def configure(tank_width_cm=None, tank_depth_cm=None, tank_height_cm=None,

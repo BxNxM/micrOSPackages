@@ -44,15 +44,13 @@ aqua stop
 Open the dashboard after `aqua load`:
 
 ```text
-http://<device>/aqua
-http://<device>/irrigation
+http://<device>/aqua/ui
 ```
 
 ## Skeleton API
 
 - `GET /aqua/api` returns the dummy dashboard state.
 - `POST /aqua/api` accepts `status`, `configure`, `water`, `stop`, `set_level`, and `measure_level` actions.
-- `/irrigation/api` is an alias for the same API.
 
 The current model includes:
 
