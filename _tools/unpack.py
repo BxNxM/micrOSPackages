@@ -102,9 +102,14 @@ def copy_package_resources(local_packages):
 
 def resolve_layout_source(lib_path:Path, package_name:str, target:str, source:str) -> Path:
     if is_resource_target(target):
-        if Path(source).parts and Path(source).parts[0] == package_name:
-            return lib_path / source
         direct_source = lib_path / package_name / source
+        package_prefixed_source = lib_path / source
+        if Path(source).parts and Path(source).parts[0] == package_name:
+            if direct_source.exists():
+                return direct_source
+            if package_prefixed_source.exists():
+                return package_prefixed_source
+            return direct_source
         target_parts = Path(target.lstrip("/")).parts
         target_rel = Path(*target_parts[1:]) if len(target_parts) > 1 else None
         child_target_source = lib_path / package_name / target_rel / source if target_rel else None
@@ -130,7 +135,14 @@ def resolve_layout_source(lib_path:Path, package_name:str, target:str, source:st
 def resolve_layout_target(lib_path:Path, package_name:str, target:str, source:str) -> Path:
     if is_resource_target(target):
         source_parts = Path(source).parts
-        if source_parts and source_parts[0] == package_name:
+        direct_source = lib_path / package_name / source
+        package_prefixed_source = lib_path / source
+        if (
+            source_parts
+            and source_parts[0] == package_name
+            and package_prefixed_source.exists()
+            and not direct_source.exists()
+        ):
             source_rel = Path(*source_parts[1:])
         else:
             source_rel = Path(source)

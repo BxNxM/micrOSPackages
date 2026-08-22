@@ -1,0 +1,326 @@
+import importlib.util
+import asyncio
+import json
+import sys
+import types
+import unittest
+from pathlib import Path
+
+
+PACKAGE_DIR = Path(__file__).resolve().parent.parent / "package"
+
+
+def _install_stubs():
+    common = types.ModuleType("Common")
+    common.ENDPOINTS = {}
+    common.TASKS = {}
+
+    def web_endpoint(endpoint, callback, method="GET"):
+        common.ENDPOINTS[(endpoint, method)] = callback
+        return True
+
+    common.web_endpoint = web_endpoint
+
+    class DoneFlag:
+        def __init__(self):
+            self.value = False
+
+        def is_set(self):
+            return self.value
+
+        def set(self):
+            self.value = True
+
+        def clear(self):
+            self.value = False
+
+    class FakeTask:
+        def __init__(self, tag, coroutine=None):
+            self.tag = tag
+            self.coroutine = coroutine
+            self.done = DoneFlag()
+            self.out = ""
+            self.feed_ms = []
+
+        def __enter__(self):
+            self.done.clear()
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.done.set()
+
+        async def feed(self, sleep_ms=1):
+            self.feed_ms.append(sleep_ms)
+
+    def micro_task(tag, task=None, _wrap=False):
+        if _wrap:
+            def decorator(async_fn):
+                task_tag = "{}._{}".format(tag, async_fn.__name__)
+
+                def launcher(*args, **kwargs):
+                    coroutine = async_fn(task_tag, *args, **kwargs)
+                    return micro_task(task_tag, task=coroutine)
+
+                return launcher
+            return decorator
+        if task is not None:
+            active = common.TASKS.get(tag)
+            if active is not None and not active.done.is_set():
+                return {tag: "Already running"}
+            common.TASKS[tag] = FakeTask(tag, task)
+            return {tag: "Starting"}
+        return common.TASKS.get(tag)
+
+    def manage_task(tag, operation):
+        task = common.TASKS.get(tag)
+        if operation == "kill" and task is not None:
+            task.done.set()
+            if task.coroutine is not None:
+                task.coroutine.close()
+            return True, "Kill: {}".format(tag)
+        return False, "No task found: {}".format(tag)
+
+    common.manage_task = manage_task
+    common.micro_task = micro_task
+    sys.modules["Common"] = common
+
+    types_mod = types.ModuleType("Types")
+    types_mod.resolve = lambda value, **kwargs: value
+    sys.modules["Types"] = types_mod
+
+    micro_io = types.ModuleType("microIO")
+    micro_io.BOUND = []
+
+    def bind_pin(tag, number=None):
+        micro_io.BOUND.append((tag, number))
+        return 99 if number is None else number
+
+    def pinmap_search(keys):
+        if isinstance(keys, str):
+            keys = [keys]
+        bound = dict(micro_io.BOUND)
+        return {key: bound.get(key) for key in keys}
+
+    micro_io.bind_pin = bind_pin
+    micro_io.pinmap_search = pinmap_search
+    sys.modules["microIO"] = micro_io
+
+
+def _load_module():
+    _install_stubs()
+    for name in (
+        "irrigation_system",
+        "irrigation_system.actuators",
+        "irrigation_system.monitoring",
+    ):
+        sys.modules.pop(name, None)
+    package = types.ModuleType("irrigation_system")
+    package.__path__ = [str(PACKAGE_DIR)]
+    sys.modules["irrigation_system"] = package
+    spec = importlib.util.spec_from_file_location(
+        "LM_aqua_under_test", str(PACKAGE_DIR / "LM_aqua.py")
+    )
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["LM_aqua_under_test"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class TestAquaSkeleton(unittest.TestCase):
+    def setUp(self):
+        self.aqua = _load_module()
+
+    def tearDown(self):
+        sys.modules.pop("LM_hcsr04", None)
+        sys.modules.pop("LM_rcwl1670", None)
+        sys.modules.pop("LM_aqua_under_test", None)
+        sys.modules.pop("irrigation_system.actuators", None)
+        sys.modules.pop("irrigation_system.monitoring", None)
+        sys.modules.pop("irrigation_system", None)
+
+    def test_default_status_has_tank_and_flow_math(self):
+        data = self.aqua.status()
+
+        self.assertEqual(data["endpoints"]["ui"], "/aqua")
+        self.assertEqual(data["config"]["level_module"], "manual")
+        self.assertEqual(data["level_sensor"]["source"], "manual")
+        self.assertEqual(data["tank"]["capacity_l"], 20.0)
+        self.assertEqual(data["tank"]["water_height_cm"], 13.0)
+        self.assertEqual(data["tank"]["level_percent"], 65.0)
+        self.assertEqual(data["tank"]["volume_l"], 13.0)
+        self.assertEqual(data["tank"]["usable_l"], 11.0)
+        self.assertEqual(data["flow"]["head_count"], 4)
+        self.assertEqual(data["flow"]["pump_l_hour"], 300.0)
+        self.assertEqual(data["flow"]["head_l_hour"], 75.0)
+        self.assertEqual(data["soil"]["count"], 4)
+        self.assertEqual(data["soil"]["average_percent"], 49.0)
+        self.assertEqual(len(data["soil"]["sensors"]), 4)
+        self.assertTrue(data["ready"]["ok"])
+
+    def test_configure_updates_dashboard_calculations(self):
+        data = self.aqua.configure(
+            tank_width_cm=50,
+            tank_depth_cm=30,
+            tank_height_cm=20,
+            water_distance_cm=10,
+            pump_l_hour=300,
+            head_count=6,
+            soil_sensor_count=3,
+        )
+
+        self.assertEqual(data["tank"]["capacity_l"], 30.0)
+        self.assertEqual(data["tank"]["water_height_cm"], 10.0)
+        self.assertEqual(data["tank"]["level_percent"], 50.0)
+        self.assertEqual(data["tank"]["volume_l"], 15.0)
+        self.assertEqual(data["flow"]["head_l_hour"], 50.0)
+        self.assertEqual(data["config"]["head_count"], 6)
+        self.assertEqual(data["level_sensor"]["source"], "manual_config")
+        self.assertEqual(data["level_sensor"]["distance_cm"], 10)
+        self.assertEqual(data["soil"]["count"], 3)
+        self.assertEqual(data["soil"]["average_percent"], 46.7)
+
+    def test_load_books_pump_pin_and_pinmap_reports_it(self):
+        self.aqua.load(web=False, pump_pin=27)
+
+        self.assertEqual(sys.modules["microIO"].BOUND, [("aqua_pump", 27)])
+        self.assertEqual(self.aqua.pinmap(), {"aqua_pump": 27})
+        self.assertEqual(self.aqua.status()["runtime"]["pump_pin"], 27)
+
+    def test_water_sets_dummy_pump_state(self):
+        result = self.aqua.water(per_head_l=0.25)
+
+        self.assertTrue(result["state"])
+        self.assertEqual(result["task"], {"aqua._watering_task": "Starting"})
+        self.assertEqual(result["plan"]["duration_s"], 12.0)
+        self.assertEqual(result["plan"]["volume_l"], 1.0)
+        self.assertEqual(result["plan"]["per_head_l"], 0.25)
+        self.assertTrue(self.aqua.status()["pump_on"])
+        self.assertEqual(self.aqua.status()["runtime"]["watering"]["target_l"], 1.0)
+
+        stopped = self.aqua.stop()
+        self.assertFalse(stopped["pump_on"])
+
+    def test_watering_task_finishes_and_reports_outgoing_liters(self):
+        ticks = iter([0, 0, 600, 1200])
+        self.aqua.actuators.ticks_ms = lambda: next(ticks, 1200)
+
+        result = self.aqua.water(volume_l=0.1)
+        task = sys.modules["Common"].TASKS["aqua._watering_task"]
+
+        asyncio.run(task.coroutine)
+        data = self.aqua.status()
+
+        self.assertTrue(result["state"])
+        self.assertFalse(data["pump_on"])
+        self.assertEqual(data["runtime"]["watering"]["dispensed_l"], 0.1)
+        self.assertEqual(data["runtime"]["watering"]["remaining_s"], 0)
+        self.assertIn("Watering done", data["task"]["out"])
+
+    def test_low_tank_blocks_dummy_water(self):
+        self.aqua.configure(water_distance_cm=19, min_level_percent=10)
+        result = self.aqua.water(volume_l=1)
+
+        self.assertFalse(result["state"])
+        self.assertEqual(result["error"], "safety_lockout")
+        self.assertIn("tank_level_low", result["ready"]["problems"])
+
+    def test_ultrasonic_measurement_updates_top_distance_when_selected(self):
+        sensor = types.ModuleType("LM_rcwl1670")
+        sensor.measure_cm = lambda: {"cm": 8}
+        sys.modules["LM_rcwl1670"] = sensor
+
+        data = self.aqua.configure(level_module="rcwl1670")
+
+        self.assertEqual(data["tank"]["water_distance_cm"], 8)
+        self.assertEqual(data["tank"]["water_height_cm"], 12)
+        self.assertEqual(data["tank"]["level_percent"], 60.0)
+        self.assertEqual(data["tank"]["volume_l"], 12.0)
+        self.assertEqual(self.aqua.status()["runtime"]["last_level"]["module"], "LM_rcwl1670")
+
+    def test_manual_distance_refresh_does_not_measure_without_sensor(self):
+        sensor = types.ModuleType("LM_rcwl1670")
+        sensor.measure_cm = lambda: {"cm": 5}
+        sys.modules["LM_rcwl1670"] = sensor
+
+        configured = self.aqua.configure(water_distance_cm=11)
+        self.assertEqual(configured["tank"]["water_distance_cm"], 11)
+        self.assertEqual(configured["tank"]["volume_l"], 9.0)
+        self.assertEqual(configured["level_sensor"]["source"], "manual_config")
+        self.assertEqual(configured["level_sensor"]["distance_cm"], 11)
+
+        refreshed = self.aqua.status(measure=True)
+        self.assertEqual(refreshed["tank"]["water_distance_cm"], 11)
+        self.assertEqual(refreshed["tank"]["volume_l"], 9.0)
+        self.assertEqual(refreshed["level_sensor"]["source"], "manual_config")
+
+        measured = self.aqua.configure(level_module="rcwl1670")
+        self.assertEqual(measured["tank"]["water_distance_cm"], 5)
+        self.assertEqual(measured["tank"]["volume_l"], 15.0)
+        self.assertEqual(measured["level_sensor"]["module"], "LM_rcwl1670")
+
+    def test_real_sensor_mode_ignores_manual_distance_payload(self):
+        sensor = types.ModuleType("LM_hcsr04")
+        sensor.measure_cm = lambda: {"cm": 6}
+        sys.modules["LM_hcsr04"] = sensor
+
+        data = self.aqua.configure(level_module="hcsr04", water_distance_cm=11)
+
+        self.assertEqual(data["tank"]["water_distance_cm"], 6)
+        self.assertEqual(data["tank"]["volume_l"], 14.0)
+        self.assertEqual(data["level_sensor"]["module"], "LM_hcsr04")
+
+    def test_sensor_exception_reports_offline(self):
+        sensor = types.ModuleType("LM_hcsr04")
+
+        def fail():
+            raise RuntimeError("no echo")
+
+        sensor.measure_cm = fail
+        sys.modules["LM_hcsr04"] = sensor
+
+        data = self.aqua.configure(level_module="hcsr04")
+
+        self.assertEqual(data["level_sensor"]["error"], "sensor_unavailable")
+        self.assertEqual(data["level_sensor"]["module"], "LM_hcsr04")
+
+    def test_disabled_level_module_keeps_manual_distance_on_refresh(self):
+        sensor = types.ModuleType("LM_rcwl1670")
+        sensor.measure_cm = lambda: {"cm": 5}
+        sys.modules["LM_rcwl1670"] = sensor
+
+        self.aqua.configure(level_module="manual", water_distance_cm=11)
+        data = self.aqua.status(measure=True)
+
+        self.assertEqual(data["tank"]["water_distance_cm"], 11)
+        self.assertEqual(data["level_sensor"]["source"], "manual_config")
+
+    def test_web_api_contract(self):
+        self.aqua.load()
+        callback = sys.modules["Common"].ENDPOINTS[("aqua/api", "POST")]
+        content_type, payload = callback(
+            {},
+            json.dumps({
+                "action": "configure",
+                "config": {
+                    "tank_width_cm": 40,
+                    "tank_depth_cm": 25,
+                    "tank_height_cm": 30,
+                    "water_distance_cm": 15,
+                    "head_count": 8,
+                    "pump_l_hour": 320,
+                    "soil_sensor_count": 5,
+                },
+            }).encode("utf-8"),
+        )
+        data = json.loads(payload)
+
+        self.assertEqual(content_type, "application/json")
+        self.assertEqual(data["tank"]["capacity_l"], 30.0)
+        self.assertEqual(data["tank"]["volume_l"], 15.0)
+        self.assertEqual(data["flow"]["head_count"], 8)
+        self.assertEqual(data["flow"]["head_l_hour"], 40.0)
+        self.assertEqual(data["soil"]["count"], 5)
+
+
+if __name__ == "__main__":
+    unittest.main()

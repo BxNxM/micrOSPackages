@@ -143,7 +143,7 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
             (
                 "load trig_pin=16 echo_pin=17 timeout_us=40000",
                 "measure_mm",
-                "TEXTBOX measure_cm",
+                "TEXTBOX{'refresh': 500} measure_cm",
                 "deinit",
                 "pinmap",
             ),
@@ -152,7 +152,7 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
             hcsr04.help(),
             (
                 "measure_mm",
-                "TEXTBOX measure_cm",
+                "TEXTBOX{'refresh': 500} measure_cm",
                 "deinit",
                 "pinmap",
                 "load",

@@ -1,0 +1,43 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_aqua.py",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/LM_aqua.py"
+        ],
+        [
+            "irrigation_system/__init__.py",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/__init__.py"
+        ],
+        [
+            "irrigation_system/actuators.py",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/actuators.py"
+        ],
+        [
+            "irrigation_system/irrigation_system/aqua.css",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/irrigation_system/aqua.css"
+        ],
+        [
+            "irrigation_system/irrigation_system/aqua.html",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/irrigation_system/aqua.html"
+        ],
+        [
+            "irrigation_system/irrigation_system/aqua.js",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/irrigation_system/aqua.js"
+        ],
+        [
+            "irrigation_system/monitoring.py",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/monitoring.py"
+        ],
+        [
+            "irrigation_system/pacman.json",
+            "github:BxNxM/micrOSPackages/irrigation_system/package/pacman.json"
+        ]
+    ],
+    "deps": [
+        [
+            "github:BxNxM/micrOSPackages/ultrasonic_distance",
+            "main"
+        ]
+    ]
+}
