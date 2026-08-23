@@ -11,26 +11,21 @@ from ultrasonic_distance.trigger_echo import (
 
 
 SENSOR = None
-SENSOR_NAME = "HC-SR04"
-DEFAULT_TIMEOUT_US = 1000000
-DEFAULT_TRIGGER_US = 10
-DEFAULT_STABILIZE_US = 5
 
 
-def _sensor(trig_pin=None, echo_pin=None, timeout_us=DEFAULT_TIMEOUT_US,
-            trigger_us=DEFAULT_TRIGGER_US, stabilize_us=DEFAULT_STABILIZE_US,
-            reset=False):
+def _sensor(trig_pin=32, echo_pin=35, timeout_us=1000000,
+            trigger_us=10, stabilize_us=5, reset=False):
     global SENSOR
     if as_bool(reset) and SENSOR is not None:
         SENSOR.deinit()
         SENSOR = None
     if SENSOR is None:
         SENSOR = TriggerEchoSensor(
-            SENSOR_NAME,
+            "HC-SR04",
             trig_pin=trig_pin,
             echo_pin=echo_pin,
-            trig_logical="hcsrtrig",
-            echo_logical="hcsrecho",
+            trig_logical="dist_trig",
+            echo_logical="dist_echo",
             timeout_us=timeout_us,
             trigger_us=trigger_us,
             stabilize_us=stabilize_us,
@@ -38,14 +33,13 @@ def _sensor(trig_pin=None, echo_pin=None, timeout_us=DEFAULT_TIMEOUT_US,
     return SENSOR
 
 
-def load(trig_pin=None, echo_pin=None, timeout_us=DEFAULT_TIMEOUT_US,
-         trigger_us=DEFAULT_TRIGGER_US, reset=False):
+def load(trig_pin=32, echo_pin=35, timeout_us=1000000, trigger_us=10, reset=False):
     """
     Initialize HC-SR04 ultrasonic distance sensor module.
 
-    Defaults intentionally mirror the core LM_distance module:
-    bind_pin("hcsrtrig"), bind_pin("hcsrecho"), 5us stabilize, 10us trigger,
-    and 1000000us echo timeout.
+    Defaults intentionally mirror the core LM_distance module GPIOs:
+    bind_pin("dist_trig", 32), bind_pin("dist_echo", 35), 5us stabilize,
+    10us trigger, and 1000000us echo timeout.
     """
     _sensor(trig_pin=trig_pin, echo_pin=echo_pin, timeout_us=timeout_us,
             trigger_us=trigger_us, reset=reset)
@@ -79,7 +73,7 @@ def pinmap():
     """
     Shows logical pins used by this Load Module.
     """
-    return pinmap_search(["hcsrtrig", "hcsrecho"])
+    return pinmap_search(["dist_trig", "dist_echo"])
 
 
 def help(widgets=False):
@@ -91,6 +85,6 @@ def help(widgets=False):
         "TEXTBOX{'refresh': 500} measure_cm",
         "deinit",
         "pinmap",
-        "load",
+        "load trig_pin=32 echo_pin=35 timeout_us=1000000",
         "[info] HCSR04 Ultrasonic distance sensor",
     ), widgets=widgets)

@@ -11,6 +11,28 @@ PACKAGE_DIR = Path(__file__).resolve().parent.parent / "package"
 
 
 def _install_stubs():
+    machine = types.ModuleType("machine")
+    machine.PINS = []
+
+    class FakePin:
+        OUT = 1
+
+        def __init__(self, pin, mode=None):
+            self.pin = pin
+            self.mode = mode
+            self.values = []
+            self._value = 0
+            machine.PINS.append(self)
+
+        def value(self, value=None):
+            if value is not None:
+                self._value = value
+                self.values.append(value)
+            return self._value
+
+    machine.Pin = FakePin
+    sys.modules["machine"] = machine
+
     common = types.ModuleType("Common")
     common.ENDPOINTS = {}
     common.TASKS = {}
@@ -130,6 +152,17 @@ class TestAquaSkeleton(unittest.TestCase):
     def setUp(self):
         self.aqua = _load_module()
 
+    def _install_distance_sensor(self, module_name, distance_cm):
+        sensor = types.ModuleType(module_name)
+
+        def measure_cm():
+            sys.modules["microIO"].bind_pin("dist_trig", 32)
+            sys.modules["microIO"].bind_pin("dist_echo", 35)
+            return {"cm": distance_cm}
+
+        sensor.measure_cm = measure_cm
+        sys.modules[module_name] = sensor
+
     def tearDown(self):
         sys.modules.pop("LM_hcsr04", None)
         sys.modules.pop("LM_rcwl1670", None)
@@ -142,14 +175,18 @@ class TestAquaSkeleton(unittest.TestCase):
         data = self.aqua.status()
 
         self.assertEqual(data["endpoints"]["ui"], "/aqua/ui")
-        self.assertEqual(data["endpoints"]["api"], "/aqua/api")
+        self.assertEqual(data["endpoints"]["api"], "/rest/aqua")
+        self.assertEqual(data["endpoints"]["settings"], "/aqua/settings")
         self.assertNotIn("alias", data["endpoints"])
         self.assertEqual(data["config"]["level_module"], "manual")
+        self.assertEqual(data["config"]["min_level_cm"], 2.0)
         self.assertEqual(data["level_sensor"]["source"], "manual")
         self.assertEqual(data["tank"]["capacity_l"], 20.0)
         self.assertEqual(data["tank"]["water_height_cm"], 13.0)
         self.assertEqual(data["tank"]["level_percent"], 65.0)
         self.assertEqual(data["tank"]["volume_l"], 13.0)
+        self.assertEqual(data["tank"]["reserve_cm"], 2.0)
+        self.assertEqual(data["tank"]["reserve_l"], 2.0)
         self.assertEqual(data["tank"]["usable_l"], 11.0)
         self.assertEqual(data["flow"]["head_count"], 4)
         self.assertEqual(data["flow"]["pump_l_hour"], 300.0)
@@ -165,6 +202,7 @@ class TestAquaSkeleton(unittest.TestCase):
             tank_depth_cm=30,
             tank_height_cm=20,
             water_distance_cm=10,
+            min_level_cm=4,
             pump_l_hour=300,
             head_count=6,
             soil_sensor_count=3,
@@ -174,6 +212,9 @@ class TestAquaSkeleton(unittest.TestCase):
         self.assertEqual(data["tank"]["water_height_cm"], 10.0)
         self.assertEqual(data["tank"]["level_percent"], 50.0)
         self.assertEqual(data["tank"]["volume_l"], 15.0)
+        self.assertEqual(data["tank"]["reserve_cm"], 4.0)
+        self.assertEqual(data["tank"]["reserve_l"], 6.0)
+        self.assertEqual(data["tank"]["usable_l"], 9.0)
         self.assertEqual(data["flow"]["head_l_hour"], 50.0)
         self.assertEqual(data["config"]["head_count"], 6)
         self.assertEqual(data["level_sensor"]["source"], "manual_config")
@@ -182,11 +223,31 @@ class TestAquaSkeleton(unittest.TestCase):
         self.assertEqual(data["soil"]["average_percent"], 46.7)
 
     def test_load_books_pump_pin_and_pinmap_reports_it(self):
-        self.aqua.load(web=False, pump_pin=27)
+        message = self.aqua.load(web=False, pump_pin=27)
 
+        self.assertEqual(message, "Aqua irrigation system loaded. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings")
         self.assertEqual(sys.modules["microIO"].BOUND, [("aqua_pump", 27)])
         self.assertEqual(self.aqua.pinmap(), {"aqua_pump": 27})
         self.assertEqual(self.aqua.status()["runtime"]["pump_pin"], 27)
+        self.assertEqual(sys.modules["machine"].PINS[0].pin, 27)
+        self.assertEqual(sys.modules["machine"].PINS[0].mode, sys.modules["machine"].Pin.OUT)
+        self.assertEqual(sys.modules["machine"].PINS[0].values, [0])
+        self.assertEqual(self.aqua.status()["runtime"]["pump_level"], 0)
+
+    def test_pinmap_reports_selected_water_level_distance_sensor_pins(self):
+        expected = {
+            "aqua_pump": 26,
+            "dist_trig": 32,
+            "dist_echo": 35,
+        }
+        for level_module, module_name, distance_cm in (
+            ("hcsr04", "LM_hcsr04", 6),
+            ("rcwl1670", "LM_rcwl1670", 8),
+        ):
+            with self.subTest(level_module=level_module):
+                self._install_distance_sensor(module_name, distance_cm)
+                self.aqua.configure(level_module=level_module)
+                self.assertEqual(self.aqua.pinmap(), expected)
 
     def test_water_sets_dummy_pump_state(self):
         result = self.aqua.water(per_head_l=0.25)
@@ -198,9 +259,24 @@ class TestAquaSkeleton(unittest.TestCase):
         self.assertEqual(result["plan"]["per_head_l"], 0.25)
         self.assertTrue(self.aqua.status()["pump_on"])
         self.assertEqual(self.aqua.status()["runtime"]["watering"]["target_l"], 1.0)
+        self.assertEqual(sys.modules["machine"].PINS[0].values[-1], 1)
 
         stopped = self.aqua.stop()
         self.assertFalse(stopped["pump_on"])
+        self.assertEqual(sys.modules["machine"].PINS[0].values[-1], 0)
+
+    def test_start_stop_action_pair_controls_pump(self):
+        started = self.aqua.start()
+        self.assertTrue(started["pump_on"])
+        self.assertEqual(started["runtime"]["last_action"], "start")
+        self.assertEqual(started["runtime"]["pump_level"], 1)
+        self.assertEqual(sys.modules["machine"].PINS[0].values, [0, 1])
+
+        stopped = self.aqua.stop()
+        self.assertFalse(stopped["pump_on"])
+        self.assertEqual(stopped["runtime"]["last_action"], "stop")
+        self.assertEqual(stopped["runtime"]["pump_level"], 0)
+        self.assertEqual(sys.modules["machine"].PINS[0].values[-1], 0)
 
     def test_watering_task_finishes_and_reports_outgoing_liters(self):
         ticks = iter([0, 0, 600, 1200])
@@ -214,12 +290,14 @@ class TestAquaSkeleton(unittest.TestCase):
 
         self.assertTrue(result["state"])
         self.assertFalse(data["pump_on"])
+        self.assertEqual(data["runtime"]["pump_level"], 0)
+        self.assertEqual(sys.modules["machine"].PINS[0].values[-1], 0)
         self.assertEqual(data["runtime"]["watering"]["dispensed_l"], 0.1)
         self.assertEqual(data["runtime"]["watering"]["remaining_s"], 0)
         self.assertIn("Watering done", data["task"]["out"])
 
     def test_low_tank_blocks_dummy_water(self):
-        self.aqua.configure(water_distance_cm=19, min_level_percent=10)
+        self.aqua.configure(water_distance_cm=19, min_level_cm=2)
         result = self.aqua.water(volume_l=1)
 
         self.assertFalse(result["state"])
@@ -300,33 +378,82 @@ class TestAquaSkeleton(unittest.TestCase):
         self.aqua.load()
         endpoints = sys.modules["Common"].ENDPOINTS
 
+        self.assertEqual(set(endpoints), {
+            ("aqua/ui", "GET"),
+            ("aqua/settings", "GET"),
+            ("aqua/settings", "POST"),
+        })
         self.assertEqual(endpoints[("aqua/ui", "GET")], "irrigation_system/aqua.html")
-        self.assertIn(("aqua/api", "GET"), endpoints)
-        self.assertIn(("aqua/api", "POST"), endpoints)
         self.assertNotIn(("aqua", "GET"), endpoints)
         self.assertNotIn(("irrigation", "GET"), endpoints)
+        self.assertNotIn(("aqua/api", "GET"), endpoints)
+        self.assertNotIn(("aqua/api", "POST"), endpoints)
         self.assertNotIn(("irrigation/api", "GET"), endpoints)
         self.assertNotIn(("irrigation/api", "POST"), endpoints)
 
-        callback = endpoints[("aqua/api", "POST")]
-        content_type, payload = callback(
+    def test_load_reregisters_web_endpoints_without_local_guard(self):
+        self.aqua.load()
+        first = dict(sys.modules["Common"].ENDPOINTS)
+
+        self.aqua.load()
+
+        self.assertEqual(sys.modules["Common"].ENDPOINTS, first)
+
+    def test_settings_endpoint_syncs_config(self):
+        self.aqua.load()
+        endpoints = sys.modules["Common"].ENDPOINTS
+
+        content_type, payload = endpoints[("aqua/settings", "GET")]({}, b"")
+        data = json.loads(payload)
+
+        self.assertEqual(content_type, "application/json")
+        self.assertEqual(data["config"]["tank_width_cm"], 40.0)
+        self.assertEqual(data["endpoints"]["settings"], "/aqua/settings")
+
+        content_type, payload = endpoints[("aqua/settings", "POST")](
             {},
             json.dumps({
-                "action": "configure",
                 "config": {
-                    "tank_width_cm": 40,
-                    "tank_depth_cm": 25,
-                    "tank_height_cm": 30,
-                    "water_distance_cm": 15,
-                    "head_count": 8,
-                    "pump_l_hour": 320,
-                    "soil_sensor_count": 5,
+                    "tank_width_cm": 50,
+                    "tank_depth_cm": 30,
+                    "tank_height_cm": 20,
+                    "water_distance_cm": 10,
+                    "min_level_cm": 4,
+                    "head_count": 6,
                 },
             }).encode("utf-8"),
         )
         data = json.loads(payload)
 
         self.assertEqual(content_type, "application/json")
+        self.assertEqual(data["config"]["tank_width_cm"], 50.0)
+        self.assertEqual(data["config"]["min_level_cm"], 4.0)
+        self.assertEqual(data["tank"]["capacity_l"], 30.0)
+        self.assertEqual(data["tank"]["reserve_l"], 6.0)
+        self.assertEqual(data["flow"]["head_count"], 6)
+
+    def test_settings_endpoint_rejects_bad_payload(self):
+        self.aqua.load()
+        callback = sys.modules["Common"].ENDPOINTS[("aqua/settings", "POST")]
+
+        content_type, payload = callback({}, b"{")
+        data = json.loads(payload)
+
+        self.assertEqual(content_type, "application/json")
+        self.assertFalse(data["state"])
+        self.assertEqual(data["error"], "invalid_json")
+
+    def test_rest_command_targets_keep_api_contract(self):
+        data = self.aqua.configure(
+            tank_width_cm=40,
+            tank_depth_cm=25,
+            tank_height_cm=30,
+            water_distance_cm=15,
+            head_count=8,
+            pump_l_hour=320,
+            soil_sensor_count=5,
+        )
+
         self.assertEqual(data["tank"]["capacity_l"], 30.0)
         self.assertEqual(data["tank"]["volume_l"], 15.0)
         self.assertEqual(data["flow"]["head_count"], 8)

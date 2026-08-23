@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#101519" />
   <title>Aqua Irrigation</title>
   <link rel="stylesheet" href="/irrigation_system/aqua.css" />
+  <script src="/uapi.js" defer></script>
   <script src="/irrigation_system/aqua.js" defer></script>
 </head>
 <body>
@@ -34,20 +35,23 @@
 
         <div class="garden-schematic">
           <div class="tank-stack">
+            <div class="tank-caption">
+              <span>Tank</span>
+              <strong id="tankCapacity">-- L</strong>
+            </div>
             <div class="tank">
               <div id="tankFill" class="tank-fill"></div>
               <div class="tank-glass"></div>
               <div id="minLevelMarker" class="min-level-marker">
-                <span id="minLevelLabel">Min --%</span>
+                <span id="minLevelLabel">Min -- cm</span>
+              </div>
+              <div id="waterHeightMarker" class="water-height-marker">
+                <span id="waterHeightLabel">-- cm</span>
               </div>
               <div class="tank-readout">
                 <strong id="tankPercent">--%</strong>
                 <span id="tankVolume">-- L</span>
               </div>
-            </div>
-            <div class="tank-caption">
-              <span>Tank</span>
-              <strong id="tankCapacity">-- L</strong>
             </div>
           </div>
 
@@ -101,6 +105,10 @@
             <button id="waterBtn" class="primary" type="button" title="Start watering">&#9654; Water</button>
             <button id="stopBtn" class="danger" type="button" title="Stop pump">&#9632; Stop</button>
           </div>
+          <div class="run-command">
+            <span>Scheduler command</span>
+            <input id="runCommandInput" type="text" value="aqua water volume_l=1" readonly aria-label="Scheduler command" />
+          </div>
         </section>
 
         <section class="metric-list">
@@ -118,10 +126,10 @@
           </div>
           <div class="metric">
             <span>Reserve</span>
-            <strong id="metricReserve">-- L</strong>
+            <strong id="metricReserve">-- cm / -- L</strong>
           </div>
           <div class="metric">
-            <span>Water level</span>
+            <span id="metricSensorLabel">Water level (--)</span>
             <strong id="metricSensor">--</strong>
           </div>
         </section>
@@ -162,8 +170,8 @@
             <input id="tankHeightInput" name="tank_height_cm" type="number" min="0.1" step="any" inputmode="decimal" />
           </label>
           <label>
-            <span>Min level %</span>
-            <input id="minLevelInput" name="min_level_percent" type="number" min="0" max="100" step="1" inputmode="decimal" />
+            <span>Min level cm</span>
+            <input id="minLevelInput" name="min_level_cm" type="number" min="0" step="any" inputmode="decimal" />
           </label>
           <label>
             <span>Level module</span>

@@ -45,13 +45,17 @@ Default micrOS logical pins:
 
 ```text
 hcsr04:
-  hcsrtrig -> board-specific micrOS pin map
-  hcsrecho -> board-specific micrOS pin map
+  dist_trig -> GPIO32
+  dist_echo -> GPIO35
 
 rcwl1670:
-  rcwl1670_trig -> GPIO16
-  rcwl1670_echo -> GPIO17
+  dist_trig -> GPIO32
+  dist_echo -> GPIO35
 ```
+
+Both load modules book the same shared `dist_trig` and `dist_echo` tags with
+the micrOS `bind_pin` defaults, so applications such as `aqua` can expose one
+water-level distance pin pair independent of the selected ultrasonic backend.
 
 ## Pulse Protocol
 
@@ -66,12 +70,12 @@ rcwl1670:
 ## Usage
 
 ```commandline
-hcsr04 load
+hcsr04 load trig_pin=32 echo_pin=35
 hcsr04 measure_mm
 hcsr04 measure_cm
 hcsr04 deinit
 
-rcwl1670 load trig_pin=16 echo_pin=17
+rcwl1670 load trig_pin=32 echo_pin=35
 rcwl1670 measure_mm
 rcwl1670 measure_cm
 rcwl1670 deinit

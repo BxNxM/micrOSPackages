@@ -53,14 +53,20 @@ def _install_stubs():
     sys.modules["machine"] = machine
 
     micro_io = types.ModuleType("microIO")
-    pin_defaults = {
-        "hcsrtrig": 32,
-        "hcsrecho": 35,
-        "rcwl1670_trig": 16,
-        "rcwl1670_echo": 17,
-    }
-    micro_io.bind_pin = lambda name, default=None: pin_defaults[name] if default is None else default
-    micro_io.pinmap_search = lambda pins: pins
+    micro_io.BOUND = []
+
+    def bind_pin(name, default=None):
+        micro_io.BOUND.append((name, default))
+        return default
+
+    def pinmap_search(pins):
+        if isinstance(pins, str):
+            pins = [pins]
+        bound = dict(micro_io.BOUND)
+        return {pin: bound.get(pin) for pin in pins}
+
+    micro_io.bind_pin = bind_pin
+    micro_io.pinmap_search = pinmap_search
     sys.modules["microIO"] = micro_io
 
     common = types.ModuleType("Common")
@@ -95,6 +101,7 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
         FakePulse.duration_us = 1000
         FakePulse.durations = []
         FakePulse.calls.clear()
+        sys.modules["microIO"].BOUND.clear()
         hcsr04.SENSOR = None
         rcwl1670.SENSOR = None
 
@@ -107,7 +114,7 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
 
     def test_rcwl1670_measure_mm_uses_trigger_echo_pulse_mode(self):
         self.assertEqual(rcwl1670.measure_mm(), {"mm": 1000 * 100 // 582})
-        self.assertEqual(FakePulse.calls, [(17, 1, 40000)])
+        self.assertEqual(FakePulse.calls, [(35, 1, 40000)])
 
     def test_hcsr04_matches_core_measurement_helpers(self):
         self.assertEqual(hcsr04.load(), "HCSR04 Ultrasonic distance sensor - loaded")
@@ -119,14 +126,21 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
         self.assertEqual(rcwl1670.load(), "RCWL-1670 Ultrasonic distance sensor - loaded")
         self.assertEqual(rcwl1670.measure_mm(), {"mm": 1000 * 100 // 582})
         self.assertEqual(rcwl1670.measure_cm(), {"cm": (1000 / 2) / 29.1})
-        self.assertEqual(FakePulse.calls, [(17, 1, 40000), (17, 1, 40000)])
+        self.assertEqual(FakePulse.calls, [(35, 1, 40000), (35, 1, 40000)])
 
-    def test_hcsr04_uses_core_default_pin_bindings(self):
+    def test_hcsr04_uses_shared_distance_tags_and_defaults(self):
         hcsr04.load()
         self.assertEqual(hcsr04.SENSOR.trig_pin_no, 32)
         self.assertEqual(hcsr04.SENSOR.echo_pin_no, 35)
         self.assertEqual(hcsr04.SENSOR.timeout_us, 1000000)
         self.assertEqual(hcsr04.SENSOR.stabilize_us, 5)
+        self.assertEqual(sys.modules["microIO"].BOUND, [("dist_trig", 32), ("dist_echo", 35)])
+
+    def test_rcwl1670_uses_shared_distance_tags_and_defaults(self):
+        rcwl1670.load()
+        self.assertEqual(rcwl1670.SENSOR.trig_pin_no, 32)
+        self.assertEqual(rcwl1670.SENSOR.echo_pin_no, 35)
+        self.assertEqual(sys.modules["microIO"].BOUND, [("dist_trig", 32), ("dist_echo", 35)])
 
     def test_measure_timeout_raises_like_core_module(self):
         FakePulse.duration_us = -2
@@ -137,11 +151,11 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
         rcwl1670.deinit()
         self.assertIsNone(rcwl1670.SENSOR)
 
-    def test_help_and_pinmap_list_sensor_specific_names(self):
+    def test_help_and_pinmap_list_shared_distance_names(self):
         self.assertEqual(
             rcwl1670.help(),
             (
-                "load trig_pin=16 echo_pin=17 timeout_us=40000",
+                "load trig_pin=32 echo_pin=35 timeout_us=40000",
                 "measure_mm",
                 "TEXTBOX{'refresh': 500} measure_cm",
                 "deinit",
@@ -155,12 +169,18 @@ class TestUltrasonicDistancePackage(unittest.TestCase):
                 "TEXTBOX{'refresh': 500} measure_cm",
                 "deinit",
                 "pinmap",
-                "load",
+                "load trig_pin=32 echo_pin=35 timeout_us=1000000",
                 "[info] HCSR04 Ultrasonic distance sensor",
             ),
         )
-        self.assertEqual(rcwl1670.pinmap(), ["rcwl1670_trig", "rcwl1670_echo"])
-        self.assertEqual(hcsr04.pinmap(), ["hcsrtrig", "hcsrecho"])
+        rcwl1670.load()
+        self.assertEqual(rcwl1670.pinmap(), {"dist_trig": 32, "dist_echo": 35})
+
+        rcwl1670.SENSOR = None
+        sys.modules["microIO"].BOUND.clear()
+
+        hcsr04.load()
+        self.assertEqual(hcsr04.pinmap(), {"dist_trig": 32, "dist_echo": 35})
 
 
 if __name__ == "__main__":

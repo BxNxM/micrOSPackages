@@ -211,15 +211,16 @@ h2 {
 
 .garden-schematic {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-columns: 218px minmax(0, 1fr);
   gap: 22px;
   min-height: 370px;
 }
 
 .tank-stack {
   display: grid;
+  width: 218px;
   align-content: center;
-  justify-items: center;
+  justify-items: end;
   gap: 12px;
 }
 
@@ -229,7 +230,7 @@ h2 {
   height: 284px;
   border: 1px solid #64808a;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.01)),
     #0e161b;
@@ -260,33 +261,75 @@ h2 {
   bottom: 10%;
   left: 0;
   z-index: 2;
-  border-top: 1px dashed rgba(216, 167, 68, 0.92);
+  border-top: 1px solid rgba(216, 167, 68, 0.92);
   box-shadow: 0 0 10px rgba(216, 167, 68, 0.25);
   pointer-events: none;
 }
 
-.min-level-marker span {
+.min-level-marker span,
+.water-height-marker span {
   position: absolute;
-  right: 4px;
-  bottom: 3px;
-  max-width: calc(100% - 8px);
+  width: max-content;
   padding: 1px 4px;
-  border: 1px solid rgba(216, 167, 68, 0.55);
   border-radius: 4px;
-  color: #f0ca75;
   background: rgba(16, 21, 25, 0.82);
   font-size: 10px;
   font-weight: 750;
   line-height: 1.25;
+  text-align: right;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.min-level-marker span::after,
+.water-height-marker span::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  bottom: -5px;
+  width: calc(100% + 8px);
+}
+
+.min-level-marker span {
+  right: calc(100% + 8px);
+  bottom: 3px;
+  border: 1px solid rgba(216, 167, 68, 0.55);
+  color: #f0ca75;
+}
+
+.min-level-marker span::after {
+  border-top: 2px solid rgba(216, 167, 68, 0.92);
+}
+
+.water-height-marker {
+  position: absolute;
+  right: 100%;
+  bottom: 0%;
+  width: 48px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.water-height-marker span {
+  right: 8px;
+  bottom: 4px;
+  border: 1px solid rgba(94, 208, 241, 0.55);
+  color: #d9f7ff;
+}
+
+.water-height-marker span::after {
+  border-top: 2px solid rgba(237, 245, 244, 0.82);
+  box-shadow: 0 0 12px rgba(94, 208, 241, 0.34);
+}
+
+.water-height-marker.is-high span {
+  top: 4px;
+  bottom: auto;
 }
 
 .tank-readout {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   display: grid;
   place-content: center;
   gap: 4px;
@@ -319,7 +362,7 @@ h2 {
 .flow-chart {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(150px, 176px) minmax(0, 1fr);
+  grid-template-columns: minmax(124px, 142px) minmax(0, 1fr);
   gap: 18px;
   align-items: center;
   min-width: 0;
@@ -341,11 +384,11 @@ h2 {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 40px auto;
+  grid-template-columns: 34px minmax(0, 1fr);
   grid-template-rows: auto auto auto;
   align-items: center;
   min-width: 0;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid #45525a;
   border-radius: 8px;
   background: #1d252b;
@@ -803,6 +846,24 @@ select {
   align-self: end;
 }
 
+.run-command {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.run-command > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.run-command input {
+  min-width: 0;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
 .metric-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -881,7 +942,7 @@ select {
   }
 
   .tank-stack {
-    justify-items: start;
+    justify-self: start;
   }
 
   .tank-link,

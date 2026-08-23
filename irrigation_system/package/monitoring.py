@@ -8,7 +8,7 @@ CONFIG = {
     "tank_depth_cm": 25.0,
     "tank_height_cm": 20.0,
     "water_distance_cm": 7.0,
-    "min_level_percent": 10.0,
+    "min_level_cm": 2.0,
     "pump_l_hour": 300.0,
     "head_count": 4,
     "soil_sensor_count": 4,
@@ -68,7 +68,7 @@ def update_config(data):
         "tank_width_cm": ("float", 0.1, None),
         "tank_depth_cm": ("float", 0.1, None),
         "tank_height_cm": ("float", 0.1, None),
-        "min_level_percent": ("float", 0, 100),
+        "min_level_cm": ("float", 0, None),
         "pump_l_hour": ("float", 0.1, None),
         "head_count": ("int", 1, 100),
         "soil_sensor_count": ("int", 0, 100),
@@ -90,7 +90,7 @@ def tank():
     depth = as_float(CONFIG.get("tank_depth_cm"), 0, minimum=0)
     height = as_float(CONFIG.get("tank_height_cm"), 0, minimum=0)
     distance = as_float(CONFIG.get("water_distance_cm"), None, minimum=0)
-    min_level = as_float(CONFIG.get("min_level_percent"), 0, minimum=0, maximum=100)
+    reserve_cm = as_float(CONFIG.get("min_level_cm"), 0, minimum=0)
     capacity = round(width * depth * height / 1000.0, 2)
     water_height = None
     level = None
@@ -99,7 +99,7 @@ def tank():
         water_height = round(max(0, min(height, height - distance)), 2)
         level = round(water_height * 100.0 / height, 1)
         volume_l = round(width * depth * water_height / 1000.0, 2)
-    reserve_l = round(capacity * min_level / 100.0, 2)
+    reserve_l = round(width * depth * reserve_cm / 1000.0, 2)
     usable_l = None if volume_l is None else round(max(0, volume_l - reserve_l), 2)
     return {
         "width_cm": width,
@@ -110,6 +110,7 @@ def tank():
         "level_percent": level,
         "capacity_l": capacity,
         "volume_l": volume_l,
+        "reserve_cm": reserve_cm,
         "reserve_l": reserve_l,
         "usable_l": usable_l,
         "source": "dummy",
@@ -256,13 +257,13 @@ def plan(volume_l=None, per_head_l=None):
 
 def ready(required_l=None):
     tank_data = tank()
-    level = tank_data.get("level_percent")
-    min_level = as_float(CONFIG.get("min_level_percent"), 0, minimum=0, maximum=100)
+    water_height = tank_data.get("water_height_cm")
+    reserve_cm = as_float(CONFIG.get("min_level_cm"), 0, minimum=0)
     problems = []
     warnings = []
-    if level is None:
+    if water_height is None:
         warnings.append("tank_level_unknown")
-    elif level < min_level:
+    elif water_height < reserve_cm:
         problems.append("tank_level_low")
     required_l = as_float(required_l, None, minimum=0)
     if required_l and tank_data.get("usable_l") is not None:

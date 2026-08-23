@@ -4,6 +4,7 @@ const state = {
   busy: false,
   runSource: "total",
   configDirty: false,
+  settingsAt: 0,
 };
 
 const configFields = {
@@ -11,7 +12,7 @@ const configFields = {
   tankDepthInput: "tank_depth_cm",
   tankHeightInput: "tank_height_cm",
   waterDistanceInput: "water_distance_cm",
-  minLevelInput: "min_level_percent",
+  minLevelInput: "min_level_cm",
   pumpFlowInput: "pump_l_hour",
   headCountInput: "head_count",
   soilSensorCountInput: "soil_sensor_count",
@@ -19,8 +20,72 @@ const configFields = {
   pumpPinInput: "pump_pin",
 };
 
-function apiPath() {
-  return "/aqua/api";
+const REST_TIMEOUT_MS = 10000;
+const SETTINGS_SYNC_MS = 30000;
+const SETTINGS_PATH = "/aqua/settings";
+
+function restValue(value) {
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  if (typeof value === "string") return encodeURIComponent(JSON.stringify(value));
+  return null;
+}
+
+function restParams(params = {}) {
+  return Object.entries(params)
+    .filter(([, value]) => value !== null && value !== "" && typeof value !== "undefined")
+    .map(([key, value]) => {
+      const encoded = restValue(value);
+      return encoded === null ? null : `${key}=${encoded}`;
+    })
+    .filter(Boolean);
+}
+
+function aquaCommandText(command, params = {}) {
+  return ["aqua", command, ...restParams(params)].join(" ");
+}
+
+async function aquaCommand(command, params = {}, timeout = REST_TIMEOUT_MS) {
+  if (typeof restAPI !== "function") {
+    throw new Error("uapi.js is not loaded");
+  }
+  const response = await restAPI(aquaCommandText(command, params), false, timeout);
+  if (!response || response.state !== true) {
+    throw new Error(response?.result || "Aqua REST command failed");
+  }
+  return response.result;
+}
+
+async function requestJson(path, options = { cache: "no-store" }) {
+  const response = await fetch(path, options);
+  if (!response.ok) throw new Error("request " + response.status);
+  const data = await response.json();
+  if (data?.state === false) throw new Error(data.error || "request failed");
+  return data;
+}
+
+async function requestSettings() {
+  return requestJson(SETTINGS_PATH);
+}
+
+async function saveSettings(config) {
+  return requestJson(SETTINGS_PATH, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ config }),
+  });
+}
+
+async function syncSettings(data) {
+  if (state.configDirty || Date.now() - state.settingsAt < SETTINGS_SYNC_MS) return data;
+  try {
+    const settings = await requestSettings();
+    state.settingsAt = Date.now();
+    if (settings?.config) data.config = settings.config;
+  } catch (err) {
+    console.warn("Settings sync failed:", err);
+  }
+  return data;
 }
 
 function byId(id) {
@@ -68,6 +133,11 @@ function clampCount(value, minimum = 0) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return minimum;
   return Math.max(minimum, Math.min(100, Math.trunc(parsed)));
+}
+
+function clampPercent(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : null;
 }
 
 function inputText(value, digits = 3) {
@@ -120,19 +190,7 @@ function updateManualDistanceVisibility(config = null) {
 }
 
 async function requestStatus() {
-  const response = await fetch(apiPath(), { cache: "no-store" });
-  if (!response.ok) throw new Error("status " + response.status);
-  return response.json();
-}
-
-async function postAction(action, payload = {}) {
-  const response = await fetch(apiPath(), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ action, ...payload }),
-  });
-  if (!response.ok) throw new Error("status " + response.status);
-  return response.json();
+  return aquaCommand("status", { measure: true });
 }
 
 function badge(id, text, kind) {
@@ -145,6 +203,7 @@ function badge(id, text, kind) {
 function renderBadges(data) {
   const ready = data.ready || {};
   const tank = data.tank || {};
+  const minLevel = Number(data.config?.min_level_cm);
   const pumpOn = Boolean(data.pump_on);
 
   if (ready.ok) {
@@ -156,12 +215,13 @@ function renderBadges(data) {
   badge("pumpBadge", pumpOn ? "Pump on" : "Pump off", pumpOn ? "warn" : "");
 
   const level = tank.level_percent;
+  const waterHeight = Number(tank.water_height_cm);
   if (level === null || typeof level === "undefined") {
     badge("levelBadge", "Level unknown", "warn");
-  } else if (level < (data.config?.min_level_percent || 0)) {
+  } else if (Number.isFinite(minLevel) && Number.isFinite(waterHeight) && waterHeight < minLevel) {
     badge("levelBadge", "Tank low", "alert");
   } else {
-    badge("levelBadge", fmt(level, "%"), "ok");
+    badge("levelBadge", `${Math.round(Number(level))}%`, "ok");
   }
 }
 
@@ -229,6 +289,29 @@ function levelModuleLabel(value) {
   return value ? String(value) : "--";
 }
 
+function setLevelMetric(source, value) {
+  const mode = String(source || "--");
+  setText("metricSensorLabel", `Water level (${mode === "Manual" ? "manual" : mode})`);
+  setText("metricSensor", value);
+}
+
+function levelPercent(heightCm, tankHeight) {
+  const markerLevel = Number(heightCm);
+  const height = Number(tankHeight);
+  return !Number.isFinite(markerLevel) || !Number.isFinite(height) || height <= 0
+    ? null
+    : clampPercent(markerLevel * 100 / height);
+}
+
+function minLevelText(minLevelCm) {
+  return Number.isFinite(Number(minLevelCm)) ? `Min ${fmt(minLevelCm, " cm")}` : "Min -- cm";
+}
+
+function reserveText(minLevelCm, reserveL) {
+  const reserve = Number(reserveL);
+  return `${Number.isFinite(Number(minLevelCm)) ? fmt(minLevelCm, " cm") : "-- cm"} / ${Number.isFinite(reserve) ? fmt(reserve, " L") : "-- L"}`;
+}
+
 function renderSensorDistanceReadout(data, module = null) {
   const el = byId("sensorDistanceReadout");
   if (!el) return;
@@ -255,18 +338,21 @@ function renderLevelSensor(data) {
   const sensor = data.level_sensor || {};
   const moduleName = sensor.module || data.config?.level_module;
   const label = levelModuleLabel(moduleName);
+  let source = label;
+  let value = "-- cm";
 
   if (String(sensor.source || "").startsWith("manual") && Number.isFinite(Number(sensor.distance_cm))) {
-    setText("metricSensor", `Manual ${fmt(sensor.distance_cm, " cm")}`);
+    source = "Manual";
+    value = fmt(sensor.distance_cm, " cm");
   } else if (label === "No sensor" || sensor.enabled === false) {
-    setText("metricSensor", "No sensor");
+    source = "Manual";
+    value = "No sensor";
   } else if (sensor.state && Number.isFinite(Number(sensor.distance_cm))) {
-    setText("metricSensor", `${label} ${fmt(sensor.distance_cm, " cm")}`);
+    value = fmt(sensor.distance_cm, " cm");
   } else if (sensor.error) {
-    setText("metricSensor", `${label} offline`);
-  } else {
-    setText("metricSensor", label);
+    value = "offline";
   }
+  setLevelMetric(source, value);
   renderSensorDistanceReadout(data);
 }
 
@@ -310,6 +396,17 @@ function runEstimate() {
   };
 }
 
+function waterRunPayload(estimate = runEstimate()) {
+  return {
+    volume_l: Math.max(0, estimate.totalVolume || 0),
+  };
+}
+
+function renderRunCommand(estimate = runEstimate()) {
+  const input = byId("runCommandInput");
+  if (input) input.value = aquaCommandText("water", waterRunPayload(estimate));
+}
+
 function wateringRun(data = state.data) {
   return data?.runtime?.watering || null;
 }
@@ -338,6 +435,7 @@ function renderLiveRun(data = state.data) {
   const run = projectedRun(wateringRun(data));
   const active = Boolean(run?.active || (data?.pump_on && !run));
   const availableAfterCard = byId("availableAfterCard");
+  const estimate = runEstimate();
 
   setText("pumpState", active ? "Watering" : "Idle");
   setText("pumpFlow", active && run ? `${fmt(run.dispensed_l, " L", 2)} / ${fmt(run.target_l, " L", 2)}` : fmt(flow.pump_l_hour, " L/h"));
@@ -352,7 +450,6 @@ function renderLiveRun(data = state.data) {
     setText("previewAvailableAfter", `${fmt(run.dispensed_l, " L", 3)} / ${fmt(run.target_l, " L", 3)}`);
     availableAfterCard?.classList.remove("is-alert");
   } else {
-    const estimate = runEstimate();
     const tank = state.data?.tank || {};
     const usable = Number(tank.usable_l);
     const rawAfter = Number.isFinite(usable) ? usable - estimate.totalVolume : null;
@@ -363,6 +460,7 @@ function renderLiveRun(data = state.data) {
     setText("previewAvailableAfter", fmt(after, " L", 3));
     availableAfterCard?.classList.toggle("is-alert", rawAfter !== null && rawAfter < 0);
   }
+  renderRunCommand(estimate);
 }
 
 function renderStatus(data) {
@@ -376,24 +474,38 @@ function renderStatus(data) {
   const soilCount = soil.count ?? config.soil_sensor_count ?? 0;
 
   const level = Number(tank.level_percent);
-  const minLevel = Number(config.min_level_percent);
+  const tankHeight = Number(tank.height_cm);
+  const waterHeight = Number(tank.water_height_cm);
+  const measuredLevel = Number.isFinite(tankHeight) && tankHeight > 0 && Number.isFinite(waterHeight)
+    ? waterHeight * 100 / tankHeight
+    : level;
+  const minLevel = Number(config.min_level_cm);
   const fill = byId("tankFill");
-  if (fill) fill.style.height = Number.isFinite(level) ? `${Math.max(0, Math.min(100, level))}%` : "0%";
+  const waterLevel = clampPercent(measuredLevel);
+  if (fill) fill.style.height = waterLevel === null ? "0%" : `${waterLevel}%`;
+  const waterMarker = byId("waterHeightMarker");
+  if (waterMarker) {
+    waterMarker.hidden = waterLevel === null;
+    waterMarker.style.bottom = `${waterLevel || 0}%`;
+    waterMarker.classList.toggle("is-high", waterLevel !== null && waterLevel > 82);
+  }
+  setText("waterHeightLabel", Number.isFinite(waterHeight) ? fmt(waterHeight, " cm") : "-- cm");
   const marker = byId("minLevelMarker");
+  const minMarkerLevel = levelPercent(minLevel, tankHeight);
   if (marker) {
-    marker.hidden = !Number.isFinite(minLevel);
-    marker.style.bottom = `${Math.max(0, Math.min(100, minLevel || 0))}%`;
+    marker.hidden = minMarkerLevel === null;
+    marker.style.bottom = `${minMarkerLevel || 0}%`;
   }
 
-  setText("tankPercent", Number.isFinite(level) ? fmt(level, "%") : "--%");
+  setText("tankPercent", Number.isFinite(level) ? `${Math.round(level)}%` : "--%");
   setText("tankVolume", fmt(tank.volume_l, " L"));
   setText("tankCapacity", fmt(tank.capacity_l, " L"));
-  setText("minLevelLabel", Number.isFinite(minLevel) ? `Min ${fmt(minLevel, "%")}` : "Min --%");
+  setText("minLevelLabel", minLevelText(minLevel));
   setText("schemeSummary", `${headCount} heads / ${soilCount} sensors`);
   setText("usableWater", fmt(tank.usable_l, " L"));
   setText("metricPump", fmt(flow.pump_l_hour, " L/h"));
   setText("metricHead", fmt(flow.head_l_hour, " L/h"));
-  setText("metricReserve", fmt(tank.reserve_l, " L"));
+  setText("metricReserve", reserveText(minLevel, tank.reserve_l));
 
   renderHeads(headCount || 1, flow.head_l_hour || 0);
   renderSoilSensors(soil);
@@ -407,7 +519,7 @@ function renderStatus(data) {
 async function refresh() {
   if (state.busy) return;
   try {
-    const data = await requestStatus();
+    const data = await syncSettings(await requestStatus());
     renderStatus(data);
     setMessage("Synced");
   } catch (err) {
@@ -434,7 +546,8 @@ async function saveConfig(event) {
   byId("saveConfigBtn").disabled = true;
   setText("saveState", "saving");
   try {
-    const data = await postAction("configure", { config: configPayload() });
+    const data = await saveSettings(configPayload());
+    state.settingsAt = Date.now();
     state.configDirty = false;
     renderStatus(data);
     setText("saveState", "saved");
@@ -449,11 +562,9 @@ async function saveConfig(event) {
 }
 
 async function startWatering() {
-  const run = {};
   const estimate = runEstimate();
-  if (estimate.totalVolume && estimate.totalVolume > 0) {
-    run.volume_l = estimate.totalVolume;
-  } else {
+  const run = waterRunPayload(estimate);
+  if (!run.volume_l) {
     setMessage("Enter a water amount", "error");
     return;
   }
@@ -461,7 +572,7 @@ async function startWatering() {
   byId("waterBtn").disabled = true;
   state.busy = true;
   try {
-    const data = await postAction("water", { run });
+    const data = await aquaCommand("water", run);
     if (data.state === false) {
       setMessage(data.error || "Watering blocked", "error");
     } else {
@@ -481,7 +592,7 @@ async function stopWatering() {
   byId("stopBtn").disabled = true;
   state.busy = true;
   try {
-    await postAction("stop");
+    await aquaCommand("stop");
     setMessage("Pump stopped");
     state.busy = false;
     await refresh();
@@ -498,6 +609,8 @@ function wire() {
   byId("configForm")?.addEventListener("submit", saveConfig);
   byId("waterBtn")?.addEventListener("click", startWatering);
   byId("stopBtn")?.addEventListener("click", stopWatering);
+  byId("runCommandInput")?.addEventListener("focus", (event) => event.target.select());
+  byId("runCommandInput")?.addEventListener("click", (event) => event.target.select());
   byId("runVolume")?.addEventListener("input", () => {
     state.runSource = "total";
     renderLiveRun();

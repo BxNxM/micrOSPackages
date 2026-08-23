@@ -7,6 +7,11 @@ try:
 except Exception:
     import time
 
+try:
+    from machine import Pin
+except Exception:
+    Pin = None
+
 from Common import manage_task, micro_task
 from microIO import bind_pin, pinmap_search
 from irrigation_system import monitoring
@@ -22,6 +27,7 @@ RUNTIME = {
 PUMP_TAG = "aqua_pump"
 TASK_TAG = "aqua._watering_task"
 _PUMP_PIN = None
+_PUMP_OUT = None
 
 
 def now():
@@ -50,15 +56,30 @@ def set_last_action(action):
 
 
 def bind_pump(config=None, pump_pin=None):
-    global _PUMP_PIN
+    global _PUMP_PIN, _PUMP_OUT
     config = monitoring.CONFIG if config is None else config
     if pump_pin is not None:
         config["pump_pin"] = monitoring.as_int(pump_pin, config.get("pump_pin"), 0, None)
     if _PUMP_PIN is None:
         pin = monitoring.as_int(config.get("pump_pin"), 26, minimum=0)
         _PUMP_PIN = bind_pin(PUMP_TAG, pin)
+    if _PUMP_OUT is None and Pin is not None:
+        _PUMP_OUT = Pin(_PUMP_PIN, Pin.OUT)
+        _PUMP_OUT.value(0)
     RUNTIME["pump_pin"] = _PUMP_PIN
+    RUNTIME["pump_level"] = 1 if RUNTIME.get("pump_on") else 0
+    RUNTIME["pump_hw"] = _PUMP_OUT is not None
     return _PUMP_PIN
+
+
+def set_pump_power(enabled, config=None):
+    bind_pump(config=config)
+    level = 1 if enabled else 0
+    if _PUMP_OUT is not None:
+        _PUMP_OUT.value(level)
+    RUNTIME["pump_level"] = level
+    RUNTIME["pump_on"] = bool(enabled)
+    return level
 
 
 def pinmap(config=None):
@@ -124,7 +145,7 @@ def finish_watering(run_plan=None, started_ms=None, complete=False, error=None):
     run = run_state(run_plan, started_ms, active=False, complete=complete)
     if error is not None:
         run["error"] = str(error)
-    RUNTIME["pump_on"] = False
+    set_pump_power(False)
     RUNTIME["watering"] = run
     RUNTIME["last_action"] = "water_error" if error is not None else ("water_done" if complete else "water_stopped")
     set_task_out(run)
@@ -210,9 +231,8 @@ def water(config, volume_l=None, per_head_l=None):
     if not safety["ok"]:
         RUNTIME["last_action"] = "water_blocked"
         return {"state": False, "error": "safety_lockout", "plan": run_plan, "ready": safety}
-    bind_pump(config)
     started_ms = ticks_ms()
-    RUNTIME["pump_on"] = True
+    set_pump_power(True, config)
     RUNTIME["last_action"] = "water"
     RUNTIME["last_run"] = {"time": now(), "plan": run_plan}
     RUNTIME["watering"] = run_state(run_plan, started_ms)
@@ -224,23 +244,18 @@ def water(config, volume_l=None, per_head_l=None):
 
 def stop():
     if RUNTIME.get("pump_on"):
-        RUNTIME["pump_on"] = False
         manage_task(TASK_TAG, "kill")
         finish_watering(complete=False)
-    RUNTIME["pump_on"] = False
+    else:
+        set_pump_power(False)
     RUNTIME["last_action"] = "stop"
     return status()
 
 
-def on(config=None):
-    bind_pump(config)
-    RUNTIME["pump_on"] = True
-    RUNTIME["last_action"] = "on"
+def start(config=None):
+    set_pump_power(True, config)
+    RUNTIME["last_action"] = "start"
     return status()
-
-
-def off():
-    return stop()
 
 
 def status():

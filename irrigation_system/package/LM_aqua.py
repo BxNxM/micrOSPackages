@@ -12,55 +12,35 @@ except Exception:
     import json
 
 from Common import web_endpoint
+from microIO import pinmap_search
 from Types import resolve
 from irrigation_system import actuators, monitoring
-
-
-_WEB_READY = False
 
 
 def _json(data):
     return "application/json", json.dumps(data)
 
 
-def _api_get(*_):
-    return _json(status(measure=True))
+def _settings_get(*_):
+    return _json(status())
 
 
-def _api_post(_, body):
+def _settings_post(_, body):
     try:
         payload = json.loads(body.decode("utf-8")) if body else {}
     except Exception as e:
         return _json({"state": False, "error": "invalid_json", "detail": str(e)})
 
-    action = payload.get("action", "status")
-    if action == "configure":
-        return _json(configure(**payload.get("config", {})))
-    if action == "water":
-        return _json(water(**payload.get("run", {})))
-    if action == "stop":
-        return _json(stop())
-    if action == "set_level":
-        return _json(set_level(**payload.get("level", {})))
-    if action == "measure_level":
-        level = payload.get("level", {})
-        if not isinstance(level, dict):
-            level = {}
-        level["measure"] = True
-        return _json(set_level(**level))
-    if action == "status":
-        return _json(status(measure=True))
-    return _json({"state": False, "error": "unknown_action", "action": action})
+    config = payload.get("config", payload) if isinstance(payload, dict) else {}
+    if not isinstance(config, dict):
+        return _json({"state": False, "error": "invalid_config"})
+    return _json(configure(**config))
 
 
 def _register_web():
-    global _WEB_READY
-    if _WEB_READY:
-        return True
     web_endpoint("aqua/ui", "irrigation_system/aqua.html")
-    web_endpoint("aqua/api", _api_get)
-    web_endpoint("aqua/api", _api_post, "POST")
-    _WEB_READY = True
+    web_endpoint("aqua/settings", _settings_get)
+    web_endpoint("aqua/settings", _settings_post, "POST")
     return True
 
 
@@ -82,7 +62,8 @@ def _dashboard_state(measure=False):
         "task": pump["task"],
         "endpoints": {
             "ui": "/aqua/ui",
-            "api": "/aqua/api",
+            "api": "/rest/aqua",
+            "settings": "/aqua/settings",
         },
     }
 
@@ -94,11 +75,11 @@ def load(web=True, pump_pin=None):
     actuators.load(monitoring.CONFIG, pump_pin=pump_pin)
     if web:
         _register_web()
-    return "Aqua irrigation system loaded. Endpoints: /aqua/ui and /aqua/api"
+    return "Aqua irrigation system loaded. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings"
 
 
 def configure(tank_width_cm=None, tank_depth_cm=None, tank_height_cm=None,
-              water_distance_cm=None, min_level_percent=None, pump_l_hour=None,
+              water_distance_cm=None, min_level_cm=None, pump_l_hour=None,
               head_count=None, soil_sensor_count=None, pump_pin=None,
               level_module=None, **_):
     """
@@ -110,7 +91,7 @@ def configure(tank_width_cm=None, tank_depth_cm=None, tank_height_cm=None,
         "tank_depth_cm": tank_depth_cm,
         "tank_height_cm": tank_height_cm,
         "water_distance_cm": water_distance_cm,
-        "min_level_percent": min_level_percent,
+        "min_level_cm": min_level_cm,
         "pump_l_hour": pump_l_hour,
         "head_count": head_count,
         "soil_sensor_count": soil_sensor_count,
@@ -140,7 +121,10 @@ def pinmap():
     """
     Shows logical pins used by this Load Module.
     """
-    return actuators.pinmap(monitoring.CONFIG)
+    pins = actuators.pinmap(monitoring.CONFIG)
+    if not monitoring.is_manual_level_module():
+        pins.update(pinmap_search(["dist_trig", "dist_echo"]))
+    return pins
 
 
 def soil():
@@ -179,19 +163,12 @@ def stop():
     return status()
 
 
-def on():
+def start():
     """
-    Dummy manual pump-on command.
+    Manually start the pump.
     """
-    actuators.on(monitoring.CONFIG)
+    actuators.start(monitoring.CONFIG)
     return status()
-
-
-def off():
-    """
-    Dummy manual pump-off command.
-    """
-    return stop()
 
 
 def sensor_distance(module=None):
@@ -240,10 +217,9 @@ def help(widgets=False):
         "TEXTBOX sensor_distance module=None",
         "plan volume_l=1 per_head_l=None",
         "water volume_l=1 per_head_l=None",
+        "BUTTON start",
         "BUTTON stop",
-        "BUTTON on",
-        "BUTTON off",
-        "configure tank_width_cm=40 tank_depth_cm=25 tank_height_cm=20 water_distance_cm=7 level_module=manual pump_l_hour=300 head_count=4 soil_sensor_count=4 pump_pin=26",
+        "configure tank_width_cm=40 tank_depth_cm=25 tank_height_cm=20 water_distance_cm=7 min_level_cm=2 level_module=manual pump_l_hour=300 head_count=4 soil_sensor_count=4 pump_pin=26",
         "set_level distance_cm=7 distance_mm=None measure=False module=None clear=False",
         "ready volume_l=None",
     ), widgets=widgets)
