@@ -112,16 +112,25 @@ def _install_stubs():
 
     micro_io = types.ModuleType("microIO")
     micro_io.BOUND = []
+    micro_io.MAP = {}
+    micro_io.DEFAULTS = {"aqua_pump": 26}
+    micro_io.FAIL_BIND = None
 
     def bind_pin(tag, number=None):
+        if micro_io.FAIL_BIND is not None:
+            raise RuntimeError(micro_io.FAIL_BIND)
         micro_io.BOUND.append((tag, number))
-        return 99 if number is None else number
+        if number is None:
+            return micro_io.MAP.get(tag, micro_io.DEFAULTS.get(tag))
+        if not isinstance(number, int):
+            raise RuntimeError("pin must be integer")
+        micro_io.MAP[tag] = number
+        return number
 
     def pinmap_search(keys):
         if isinstance(keys, str):
             keys = [keys]
-        bound = dict(micro_io.BOUND)
-        return {key: bound.get(key) for key in keys}
+        return {key: micro_io.MAP.get(key, micro_io.DEFAULTS.get(key)) for key in keys}
 
     micro_io.bind_pin = bind_pin
     micro_io.pinmap_search = pinmap_search
@@ -233,6 +242,100 @@ class TestAquaSkeleton(unittest.TestCase):
         self.assertEqual(sys.modules["machine"].PINS[0].mode, sys.modules["machine"].Pin.OUT)
         self.assertEqual(sys.modules["machine"].PINS[0].values, [0])
         self.assertEqual(self.aqua.status()["runtime"]["pump_level"], 0)
+
+    def test_load_without_pin_lets_bind_pin_resolve_tag(self):
+        self.aqua.load(web=False)
+
+        self.assertEqual(sys.modules["microIO"].BOUND, [("aqua_pump", None)])
+        self.assertEqual(self.aqua.status()["runtime"]["pump_pin"], 26)
+        self.assertEqual(sys.modules["machine"].PINS[0].pin, 26)
+
+    def test_load_reinitializes_same_or_new_pump_pin(self):
+        self.aqua.load(web=False, pump_pin=27)
+        first_pin = sys.modules["machine"].PINS[-1]
+
+        self.aqua.load(web=False, pump_pin=27)
+        second_pin = sys.modules["machine"].PINS[-1]
+
+        self.assertIsNot(first_pin, second_pin)
+        self.assertEqual(sys.modules["microIO"].BOUND, [("aqua_pump", 27), ("aqua_pump", 27)])
+        self.assertEqual(first_pin.values, [0, 0])
+        self.assertEqual(second_pin.values, [0])
+        self.assertFalse(self.aqua.status()["pump_on"])
+
+        self.aqua.load(web=False, pump_pin=28)
+        third_pin = sys.modules["machine"].PINS[-1]
+
+        self.assertIsNot(second_pin, third_pin)
+        self.assertEqual(third_pin.pin, 28)
+        self.assertEqual(second_pin.values[-1], 0)
+        self.assertEqual(self.aqua.status()["runtime"]["pump_pin"], 28)
+
+    def test_load_bind_failure_fails_closed_and_later_retry_recovers(self):
+        self.aqua.start()
+        live_pin = sys.modules["machine"].PINS[-1]
+        self.assertTrue(self.aqua.status()["pump_on"])
+        self.assertEqual(live_pin.values[-1], 1)
+
+        sys.modules["microIO"].FAIL_BIND = "pin busy"
+        with self.assertRaises(RuntimeError):
+            self.aqua.load(web=False, pump_pin=28)
+
+        failed = self.aqua.status()
+        self.assertFalse(failed["pump_on"])
+        self.assertEqual(failed["runtime"]["pump_level"], 0)
+        self.assertFalse(failed["runtime"]["pump_hw"])
+        self.assertEqual(failed["runtime"]["last_action"], "load_failed")
+        self.assertIn("pin busy", failed["runtime"]["pump_error"])
+        self.assertEqual(live_pin.values[-1], 0)
+
+        sys.modules["microIO"].FAIL_BIND = None
+        self.aqua.load(web=False, pump_pin=28)
+        recovered = self.aqua.status()
+
+        self.assertFalse(recovered["pump_on"])
+        self.assertTrue(recovered["runtime"]["pump_hw"])
+        self.assertEqual(recovered["runtime"]["pump_pin"], 28)
+        self.assertNotIn("pump_error", recovered["runtime"])
+
+    def test_load_keeps_web_ui_available_when_pump_init_fails(self):
+        sys.modules["microIO"].FAIL_BIND = "pin busy"
+
+        message = self.aqua.load(pump_pin=28)
+        data = self.aqua.status()
+
+        self.assertIn("Pump init failed: pin busy", message)
+        self.assertIn(("aqua/ui", "GET"), sys.modules["Common"].ENDPOINTS)
+        self.assertIn(("aqua/settings", "POST"), sys.modules["Common"].ENDPOINTS)
+        self.assertFalse(data["runtime"]["pump_hw"])
+        self.assertEqual(data["runtime"]["pump_pin"], 28)
+        self.assertEqual(data["runtime"]["last_action"], "load_failed")
+
+        sys.modules["microIO"].FAIL_BIND = None
+        self.aqua.load(web=False, pump_pin=28)
+        self.assertTrue(self.aqua.status()["runtime"]["pump_hw"])
+
+    def test_settings_endpoint_retries_pump_init_with_saved_pin(self):
+        self.aqua.load()
+        callback = sys.modules["Common"].ENDPOINTS[("aqua/settings", "POST")]
+
+        sys.modules["microIO"].FAIL_BIND = "pin busy"
+        content_type, payload = callback({}, json.dumps({"config": {"pump_pin": 28}}).encode("utf-8"))
+        failed = json.loads(payload)
+
+        self.assertEqual(content_type, "application/json")
+        self.assertEqual(failed["config"]["pump_pin"], 28)
+        self.assertFalse(failed["runtime"]["pump_hw"])
+        self.assertEqual(failed["runtime"]["last_action"], "configure_pump_failed")
+
+        sys.modules["microIO"].FAIL_BIND = None
+        content_type, payload = callback({}, json.dumps({"config": {"pump_pin": 28}}).encode("utf-8"))
+        recovered = json.loads(payload)
+
+        self.assertEqual(content_type, "application/json")
+        self.assertEqual(recovered["runtime"]["pump_pin"], 28)
+        self.assertTrue(recovered["runtime"]["pump_hw"])
+        self.assertNotIn("pump_error", recovered["runtime"])
 
     def test_pinmap_reports_selected_water_level_distance_sensor_pins(self):
         expected = {

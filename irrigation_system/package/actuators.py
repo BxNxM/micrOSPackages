@@ -26,7 +26,6 @@ RUNTIME = {
 
 PUMP_TAG = "aqua_pump"
 TASK_TAG = "aqua._watering_task"
-_PUMP_PIN = None
 _PUMP_OUT = None
 
 
@@ -51,34 +50,64 @@ def ticks_diff(current, start):
         return current - start
 
 
+def _pump_off():
+    try:
+        _PUMP_OUT.value(0)
+    except Exception:
+        pass
+
+
+def _set_pump_runtime(pin, error=None):
+    RUNTIME["pump_pin"] = pin
+    RUNTIME["pump_hw"] = error is None
+    RUNTIME["pump_on"] = False
+    RUNTIME["pump_level"] = 0
+    if error is None:
+        if "pump_error" in RUNTIME:
+            del RUNTIME["pump_error"]
+    else:
+        RUNTIME["pump_error"] = str(error)
+
+
 def set_last_action(action):
     RUNTIME["last_action"] = action
 
 
 def bind_pump(config=None, pump_pin=None):
-    global _PUMP_PIN, _PUMP_OUT
+    global _PUMP_OUT
     config = monitoring.CONFIG if config is None else config
-    if pump_pin is not None:
-        config["pump_pin"] = monitoring.as_int(pump_pin, config.get("pump_pin"), 0, None)
-    if _PUMP_PIN is None:
-        pin = monitoring.as_int(config.get("pump_pin"), 26, minimum=0)
-        _PUMP_PIN = bind_pin(PUMP_TAG, pin)
-    if _PUMP_OUT is None and Pin is not None:
-        _PUMP_OUT = Pin(_PUMP_PIN, Pin.OUT)
+    pin = pump_pin
+    _pump_off()
+    try:
+        pin = bind_pin(PUMP_TAG, pin)
+        if Pin is None:
+            raise Exception("pump_hardware_unavailable")
+        _PUMP_OUT = Pin(pin, Pin.OUT)
         _PUMP_OUT.value(0)
-    RUNTIME["pump_pin"] = _PUMP_PIN
-    RUNTIME["pump_level"] = 1 if RUNTIME.get("pump_on") else 0
-    RUNTIME["pump_hw"] = _PUMP_OUT is not None
-    return _PUMP_PIN
+        config["pump_pin"] = pin
+        _set_pump_runtime(pin)
+    except Exception as e:
+        _PUMP_OUT = None
+        _set_pump_runtime(pin, error=e)
+        raise
+    return pin
 
 
 def set_pump_power(enabled, config=None):
-    bind_pump(config=config)
+    global _PUMP_OUT
     level = 1 if enabled else 0
+    if enabled and _PUMP_OUT is None:
+        bind_pump(config=config)
     if _PUMP_OUT is not None:
-        _PUMP_OUT.value(level)
-    RUNTIME["pump_level"] = level
-    RUNTIME["pump_on"] = bool(enabled)
+        try:
+            _PUMP_OUT.value(level)
+        except Exception as e:
+            _PUMP_OUT = None
+            _set_pump_runtime(RUNTIME.get("pump_pin"), error=e)
+            if enabled:
+                raise
+    RUNTIME["pump_on"] = bool(enabled and _PUMP_OUT is not None)
+    RUNTIME["pump_level"] = level if RUNTIME["pump_on"] else 0
     return level
 
 
@@ -209,7 +238,17 @@ def task_status():
 
 
 def load(config=None, pump_pin=None):
-    bind_pump(config=config, pump_pin=pump_pin)
+    if RUNTIME.get("pump_on"):
+        manage_task(TASK_TAG, "kill")
+        if isinstance(RUNTIME.get("watering"), dict):
+            finish_watering(complete=False)
+        else:
+            set_pump_power(False)
+    try:
+        bind_pump(config=config, pump_pin=pump_pin)
+    except Exception:
+        RUNTIME["last_action"] = "load_failed"
+        raise
     RUNTIME["last_action"] = "load"
     return RUNTIME["pump_pin"]
 
@@ -232,7 +271,18 @@ def water(config, volume_l=None, per_head_l=None):
         RUNTIME["last_action"] = "water_blocked"
         return {"state": False, "error": "safety_lockout", "plan": run_plan, "ready": safety}
     started_ms = ticks_ms()
-    set_pump_power(True, config)
+    try:
+        set_pump_power(True, config)
+    except Exception as e:
+        RUNTIME["last_action"] = "water_blocked"
+        return {
+            "state": False,
+            "error": "pump_init_failed",
+            "detail": str(e),
+            "plan": run_plan,
+            "ready": safety,
+            "task": task_status(),
+        }
     RUNTIME["last_action"] = "water"
     RUNTIME["last_run"] = {"time": now(), "plan": run_plan}
     RUNTIME["watering"] = run_state(run_plan, started_ms)
@@ -253,8 +303,11 @@ def stop():
 
 
 def start(config=None):
-    set_pump_power(True, config)
-    RUNTIME["last_action"] = "start"
+    try:
+        set_pump_power(True, config)
+        RUNTIME["last_action"] = "start"
+    except Exception:
+        RUNTIME["last_action"] = "start_failed"
     return status()
 
 

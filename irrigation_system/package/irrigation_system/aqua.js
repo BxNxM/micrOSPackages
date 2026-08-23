@@ -189,6 +189,11 @@ function updateManualDistanceVisibility(config = null) {
   renderSensorDistanceReadout(state.data, module);
 }
 
+function updatePumpPinLock(data = state.data) {
+  const input = byId("pumpPinInput");
+  if (input) input.disabled = Boolean(data?.runtime?.pump_hw);
+}
+
 async function requestStatus() {
   return aquaCommand("status", { measure: true });
 }
@@ -512,6 +517,7 @@ function renderStatus(data) {
   renderLevelSensor(data);
   renderBadges(data);
   fillInputs(config);
+  updatePumpPinLock(data);
   updateManualDistanceVisibility(config);
   renderLiveRun(data);
 }
@@ -531,8 +537,10 @@ async function refresh() {
 function configPayload() {
   const payload = {};
   Object.keys(configFields).forEach((id) => {
+    const el = byId(id);
+    if (!el || el.disabled) return;
     const key = configFields[id];
-    payload[key] = byId(id)?.type === "number" ? numberValue(id) : textValue(id);
+    payload[key] = el.type === "number" ? numberValue(id) : textValue(id);
   });
   if (!isManualLevelModule(payload.level_module)) {
     delete payload.water_distance_cm;

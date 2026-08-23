@@ -72,9 +72,14 @@ def load(web=True, pump_pin=None):
     """
     Register the Aqua dashboard and book the pump pin.
     """
-    actuators.load(monitoring.CONFIG, pump_pin=pump_pin)
     if web:
         _register_web()
+    try:
+        actuators.load(monitoring.CONFIG, pump_pin=pump_pin)
+    except Exception as e:
+        if not web:
+            raise
+        return "Aqua irrigation system loaded. Pump init failed: {}. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings".format(e)
     return "Aqua irrigation system loaded. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings"
 
 
@@ -99,6 +104,11 @@ def configure(tank_width_cm=None, tank_depth_cm=None, tank_height_cm=None,
         "level_module": level_module,
     })
     monitoring.configure_level(was_manual, water_distance_cm=water_distance_cm)
+    try:
+        actuators.load(monitoring.CONFIG, pump_pin=pump_pin)
+    except Exception:
+        actuators.set_last_action("configure_pump_failed")
+        return status()
     actuators.set_last_action("configure")
     return status()
 
