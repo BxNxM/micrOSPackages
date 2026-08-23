@@ -149,9 +149,10 @@
             <span>Pump L/h</span>
             <input id="pumpFlowInput" name="pump_l_hour" type="number" min="0.1" step="any" inputmode="decimal" />
           </label>
-          <label>
+          <label id="pumpPinField">
             <span>Pump pin</span>
             <input id="pumpPinInput" name="pump_pin" type="number" min="0" step="1" inputmode="numeric" />
+            <small id="pumpPinHint" class="field-hint" hidden></small>
           </label>
         </fieldset>
 

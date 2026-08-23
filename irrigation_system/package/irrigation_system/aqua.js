@@ -189,9 +189,31 @@ function updateManualDistanceVisibility(config = null) {
   renderSensorDistanceReadout(state.data, module);
 }
 
+function pumpPinNeedsAttention(data = state.data) {
+  return data?.runtime?.pump_hw === false;
+}
+
 function updatePumpPinLock(data = state.data) {
   const input = byId("pumpPinInput");
-  if (input) input.disabled = Boolean(data?.runtime?.pump_hw);
+  const field = byId("pumpPinField");
+  const hint = byId("pumpPinHint");
+  const needsAttention = pumpPinNeedsAttention(data);
+  const error = data?.runtime?.pump_error;
+  if (input) {
+    input.disabled = Boolean(data?.runtime?.pump_hw);
+    input.classList.toggle("needs-attention", needsAttention);
+    input.setAttribute("aria-invalid", needsAttention ? "true" : "false");
+    if (needsAttention) {
+      input.setAttribute("aria-describedby", "pumpPinHint");
+    } else {
+      input.removeAttribute("aria-describedby");
+    }
+  }
+  field?.classList.toggle("needs-attention", needsAttention);
+  if (hint) {
+    hint.hidden = !needsAttention;
+    hint.textContent = needsAttention ? "Please configure pump pin and save." : "";
+  }
 }
 
 async function requestStatus() {
@@ -210,6 +232,7 @@ function renderBadges(data) {
   const tank = data.tank || {};
   const minLevel = Number(data.config?.min_level_cm);
   const pumpOn = Boolean(data.pump_on);
+  const pumpAttention = pumpPinNeedsAttention(data);
 
   if (ready.ok) {
     badge("readyBadge", "Ready", "ok");
@@ -217,7 +240,11 @@ function renderBadges(data) {
     badge("readyBadge", "Locked", "alert");
   }
 
-  badge("pumpBadge", pumpOn ? "Pump on" : "Pump off", pumpOn ? "warn" : "");
+  if (pumpAttention) {
+    badge("pumpBadge", "Set pump pin", "warn");
+  } else {
+    badge("pumpBadge", pumpOn ? "Pump on" : "Pump off", pumpOn ? "warn" : "");
+  }
 
   const level = tank.level_percent;
   const waterHeight = Number(tank.water_height_cm);

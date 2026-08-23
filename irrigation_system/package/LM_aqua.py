@@ -219,12 +219,12 @@ def help(widgets=False):
     """
     return resolve((
         "load web=True pump_pin=None",
-        "STATUS status",
-        "TEXTBOX tank",
-        "TEXTBOX flow",
+        "status",
+        "tank",
+        "flow",
         "pinmap",
-        "TEXTBOX soil",
-        "TEXTBOX sensor_distance module=None",
+        "soil",
+        "sensor_distance module=None",
         "plan volume_l=1 per_head_l=None",
         "water volume_l=1 per_head_l=None",
         "BUTTON start",

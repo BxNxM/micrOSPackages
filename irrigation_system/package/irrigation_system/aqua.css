@@ -762,6 +762,12 @@ label span {
   font-weight: 650;
 }
 
+.field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 input,
 select {
   width: 100%;
@@ -777,6 +783,23 @@ input:focus,
 select:focus {
   outline: 2px solid rgba(79, 179, 217, 0.22);
   border-color: var(--blue);
+}
+
+label.needs-attention span,
+label.needs-attention .field-hint {
+  color: #f0ca75;
+}
+
+label.needs-attention input.needs-attention {
+  border-color: rgba(216, 167, 68, 0.95);
+  color: #fff7df;
+  background: rgba(216, 167, 68, 0.14);
+  box-shadow: 0 0 0 3px rgba(216, 167, 68, 0.16);
+}
+
+label.needs-attention input.needs-attention:focus {
+  outline: 2px solid rgba(216, 167, 68, 0.28);
+  border-color: #f0ca75;
 }
 
 input[readonly] {

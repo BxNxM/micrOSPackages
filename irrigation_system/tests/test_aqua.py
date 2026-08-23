@@ -180,6 +180,30 @@ class TestAquaSkeleton(unittest.TestCase):
         sys.modules.pop("irrigation_system.monitoring", None)
         sys.modules.pop("irrigation_system", None)
 
+    def test_help_keeps_public_commands_without_ui_annotations(self):
+        entries = self.aqua.help()
+
+        self.assertEqual(entries, (
+            "load web=True pump_pin=None",
+            "status",
+            "tank",
+            "flow",
+            "pinmap",
+            "soil",
+            "sensor_distance module=None",
+            "plan volume_l=1 per_head_l=None",
+            "water volume_l=1 per_head_l=None",
+            "BUTTON start",
+            "BUTTON stop",
+            "configure tank_width_cm=40 tank_depth_cm=25 tank_height_cm=20 water_distance_cm=7 min_level_cm=2 level_module=manual pump_l_hour=300 head_count=4 soil_sensor_count=4 pump_pin=26",
+            "set_level distance_cm=7 distance_mm=None measure=False module=None clear=False",
+            "ready volume_l=None",
+        ))
+        for entry in entries:
+            if entry in ("BUTTON start", "BUTTON stop"):
+                continue
+            self.assertNotIn(entry.split()[0], ("TEXTBOX", "STATUS", "BUTTON"))
+
     def test_default_status_has_tank_and_flow_math(self):
         data = self.aqua.status()
 
