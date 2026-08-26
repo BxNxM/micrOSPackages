@@ -399,7 +399,8 @@ class AppFrame(Frame):
                 # Add user press callback from page output
                 self.press_clb = output.get("press", None) if isinstance(output, dict) else None
             except Exception as e:
-                display.text(e, x, y)
+                self.press_clb = None
+                display.text(str(e), x, y)
         self.cursor_draw()
 
     @staticmethod
@@ -412,21 +413,36 @@ class AppFrame(Frame):
             return True
         return False
 
-    def next(self):
+    def _active_page_event(self, event):
+        if len(AppFrame.PAGES) == 0:
+            return
+        page = AppFrame.PAGES[self.active_page_index]
+        event_clb = getattr(page, event, None)
+        if callable(event_clb):
+            try:
+                event_clb()
+            except Exception as e:
+                syslog(f"[ERR] AppFrame {event}: {e}")
+
+    def _switch_page(self, step):
+        if len(AppFrame.PAGES) == 0:
+            return
+        self._active_page_event("on_deactivate")
         pages_cnt = len(AppFrame.PAGES) - 1
-        self.active_page_index += 1
+        self.active_page_index += step
         if self.active_page_index > pages_cnt:
             self.active_page_index = 0
+        if self.active_page_index < 0:
+            self.active_page_index = pages_cnt
+        self.press_clb = None
         self.clb_refresh()
         self.press_output = ""
 
+    def next(self):
+        self._switch_page(1)
+
     def previous(self):
-        pages_cnt = len(AppFrame.PAGES) - 1
-        self.active_page_index -= 1
-        if self.active_page_index < 0:
-            self.active_page_index = pages_cnt
-        self.clb_refresh()
-        self.press_output = ""
+        self._switch_page(-1)
 
 
 class HeaderBarFrames:

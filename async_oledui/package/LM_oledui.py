@@ -55,7 +55,6 @@ class PageUI:
         self.page = page
         self.timer = poweroff
         self._last_page_switch = ticks_ms()
-        self._cmd_task_tag = None
         # Store persistent frame objects
         self.cursor = None
         self.header_bar = None
@@ -154,7 +153,11 @@ class PageUI:
 
     @staticmethod
     def add_page(page):
-        return AppFrame.add_page(page)
+        state = AppFrame.add_page(page)
+        pageui = PageUI.INSTANCE
+        if state and pageui is not None and pageui.page_bar is not None:
+            pageui.page_bar.draw()
+        return state
 
     @staticmethod
     def write_lines(msg, display, x, y, line_limit=3):
@@ -170,15 +173,14 @@ class PageUI:
             line_start_y = char_height * i
             display.text(line, x + text_x_offset, y + line_start_y)
 
-    def _press_indicator(self, display, w, h, x, y):
+    def _press_indicator(self, output, display, w, h, x, y):
         """Dynamic page - draw press callback indicator"""
-        if self.app_frame.press_output == "":
+        if output == "":
             display.text("press", int(x + (w / 2) - 20), y + 30)
 
-    def lm_exec_page(self, cmd, run, display, w, h, x, y):
+    def lm_exec_page(self, page, display, w, h, x, y):
         """
-        :param cmd: load module string command
-        :param run: auto-run command (every page refresh)
+        :param page: LMExecPage with command state
         :param display: display instance
         :param h: frame h
         :param w: frame w
@@ -189,54 +191,103 @@ class PageUI:
 
         def _display_output():
             nonlocal x, y, display
-            if self._cmd_task_tag is None:
+            if page.task_tag is None:
                 # Display cached data
-                PageUI.write_lines(self.app_frame.press_output, display, x, y + 20)
+                PageUI.write_lines(page.output, display, x, y + 20)
                 return
-            task_buffer = manage_task(self._cmd_task_tag, 'show').replace(' ', '')
+            task_buffer = manage_task(page.task_tag, 'show').replace(' ', '')
             if task_buffer is not None and len(task_buffer) > 0:
                 # Update display out to task buffered data
-                self.app_frame.press_output = task_buffer
-                if not manage_task(self._cmd_task_tag, 'isbusy'):
+                page.set_output(task_buffer)
+                if not manage_task(page.task_tag, 'isbusy'):
                     # data gathered - remove tag - skip re-read
-                    self._cmd_task_tag = None
+                    page.task_tag = None
             # Display task cached data
-            PageUI.write_lines(self.app_frame.press_output, display, x, y + 20)
+            PageUI.write_lines(page.output, display, x, y + 20)
 
         def _execute(display, w, h, x, y):
-            nonlocal cmd, run
             try:
-                cmd_list = cmd.strip().split()
+                cmd_list = page.cmd_list()
+                if len(cmd_list) == 0:
+                    page.set_output("Empty command")
+                    return
                 # TASK mode: background execution, intercon: >> OR task: &
-                if '>>' in cmd_list[-1] or '&' in cmd_list[-1]:
+                if page.background:
                     # BACKGROUND: EXECUTE COMMAND
-                    state, out = exec_cmd(cmd_list, jsonify=True) if self._cmd_task_tag is None else (False, "skip...")
+                    state, out = (exec_cmd(cmd_list, jsonify=True)
+                                  if page.task_tag is None else (False, "skip..."))
                     if state:
-                        self._cmd_task_tag = list(out.keys())[0]
-                        buffer = manage_task(self._cmd_task_tag, 'show').replace(' ', '')
+                        page.task_tag = list(out.keys())[0]
+                        buffer = manage_task(page.task_tag, 'show').replace(' ', '')
                         if buffer is not None and len(buffer) > 0:
-                            self.app_frame.press_output = buffer
+                            page.set_output(buffer)
                 else:
                     # REALTIME mode: get command execution result
                     state, out = exec_cmd(cmd_list, jsonify=True)
-                    self.app_frame.press_output = str(out)
+                    page.set_output(out)
             except Exception as e:
-                self.app_frame.press_output = str(e)
+                page.set_output(e)
             # Print and cache output to display
-            PageUI.write_lines(self.app_frame.press_output, display, x, y+20)
+            PageUI.write_lines(page.output, display, x, y+20)
 
         # Write command header line and buffered output
-        PageUI.write_lines(cmd, display, x, y, line_limit=2)
+        PageUI.write_lines(page.cmd, display, x, y, line_limit=2)
         _display_output()
         # RUN command
-        if run:
+        if page.run:
             # Automatic Execution Mode (in page refresh time)
             _execute(display, w, h, x, y)
             return None
         # Button Press Execution Mode (callback)
-        self._press_indicator(display, w, h, x, y)
+        self._press_indicator(page.output, display, w, h, x, y)
         # Return "press" callback, mandatory input parameters: display, w, h, x, y
         return {"press": _execute}
+
+
+class LMExecPage:
+    """
+    Command page state container.
+
+    One instance is created per genpage call so background task/output state
+    cannot bleed across pages while the user navigates.
+    """
+
+    def __init__(self, pageui, cmd, run):
+        self.pageui = pageui
+        self.cmd = cmd
+        self.run = run
+        self.task_tag = None
+        self.output = ""
+        self._cmd_list = tuple(cmd.strip().split())
+        self.background = (len(self._cmd_list) > 0
+                           and ('>>' in self._cmd_list[-1] or '&' in self._cmd_list[-1]))
+
+    def __call__(self, display, w, h, x, y):
+        return self.pageui.lm_exec_page(self, display, w, h, x, y)
+
+    def cmd_list(self):
+        return list(self._cmd_list)
+
+    def set_output(self, output):
+        self.output = str(output)
+        if self.pageui.app_frame is not None:
+            self.pageui.app_frame.press_output = self.output
+
+    def cancel_task(self):
+        if self.task_tag is None:
+            return True
+        task_tag = self.task_tag
+        self.task_tag = None
+        try:
+            result = manage_task(task_tag, 'kill')
+            return result[0] if isinstance(result, tuple) else result
+        except Exception as e:
+            syslog(f'[ERR] oledui task cancel {task_tag}: {e}')
+            return False
+
+    def on_deactivate(self):
+        self.cancel_task()
+        self.set_output("")
 
 
 #################################################################################
@@ -347,7 +398,7 @@ def genpage(cmd=None, run=False):
 
     try:
         # Create page for intercon command
-        PageUI.INSTANCE.add_page(lambda display, w, h, x, y: PageUI.INSTANCE.lm_exec_page(cmd, run, display, w, h, x, y))
+        PageUI.INSTANCE.add_page(LMExecPage(PageUI.INSTANCE, cmd, run))
     except Exception as e:
         syslog(f'[ERR] genpage: {e}')
         return str(e)
@@ -359,6 +410,8 @@ def add_page(page_callback):
     [LM] Create page from load module with callback function
     :param page_callback: callback func(display, w, h, x, y)
     """
+    if PageUI.INSTANCE is not None:
+        return PageUI.INSTANCE.add_page(page_callback)
     return AppFrame.add_page(page_callback)
 
 
