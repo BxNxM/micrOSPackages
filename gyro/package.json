@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_qmi8658.py",
+            "github:BxNxM/micrOSPackages/gyro/package/LM_qmi8658.py"
+        ],
+        [
+            "gyro/__init__.py",
+            "github:BxNxM/micrOSPackages/gyro/package/__init__.py"
+        ],
+        [
+            "gyro/pacman.json",
+            "github:BxNxM/micrOSPackages/gyro/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

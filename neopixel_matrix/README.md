@@ -67,4 +67,12 @@ Open `matrixDraw` from the micrOS web UI to draw frames.
 
 ## Dependencies
 
-n/a
+No mandatory package dependencies.
+
+On boards with the onboard QMI8658C sensor, `neomatrix load` can bind the shared
+I2C pins for the sensor. Install the `gyro` package separately when you also
+want the `qmi8658` shell commands:
+
+```bash
+pacman install "github:BxNxM/micrOSPackages/gyro"
+```

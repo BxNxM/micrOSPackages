@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_haptic.py",
+            "github:BxNxM/micrOSPackages/haptic/package/LM_haptic.py"
+        ],
+        [
+            "haptic/__init__.py",
+            "github:BxNxM/micrOSPackages/haptic/package/__init__.py"
+        ],
+        [
+            "haptic/pacman.json",
+            "github:BxNxM/micrOSPackages/haptic/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

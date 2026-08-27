@@ -1,17 +1,15 @@
 {
     "versions": {
         "packager": "0.2.0",
-        "package": "0.0.3"
+        "package": "0.0.1"
     },
-    "url": "github:BxNxM/micrOSPackages/async_oledui",
+    "url": "github:BxNxM/micrOSPackages/gyro",
     "layout": {
         "/modules": [
-            "LM_oledui.py"
+            "LM_qmi8658.py"
         ],
         "/data": [],
         "/web": []
     },
-    "deps": [
-        "haptic"
-    ]
+    "deps": []
 }

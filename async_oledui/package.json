@@ -1,5 +1,5 @@
 {
-    "version": "0.0.2",
+    "version": "0.0.3",
     "urls": [
         [
             "LM_oledui.py",
@@ -22,5 +22,10 @@
             "github:BxNxM/micrOSPackages/async_oledui/package/uiframes.py"
         ]
     ],
-    "deps": []
+    "deps": [
+        [
+            "github:BxNxM/micrOSPackages/haptic",
+            "main"
+        ]
+    ]
 }

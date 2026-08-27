@@ -389,15 +389,19 @@ small custom page callback.
 
 ## Dependencies
 
-Package-level `package.json` does not declare external mip dependencies. The UI
-expects these micrOS built-ins or optional Load Modules to be available on the
-device:
+Package-level `package.json` declares the moved `haptic` package so
+`haptic=True` can import `LM_haptic` after install. The haptic driver is still
+used lazily only when haptic feedback is enabled.
+
+The UI expects these micrOS built-ins or optional Load Modules to be available
+on the device:
 
 ```text
 LM_system
 LM_oled or LM_oled_sh1106
 LM_trackball      optional hardware control
-LM_haptic         optional haptic feedback
+haptic package / LM_haptic
+                  package dependency; runtime use is optional
 LM_gameOfLife     optional screen saver animation
 LM_esp32          optional CPU temperature in hover popup
 ```
