@@ -1,0 +1,26 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_motor_l298n.py",
+            "github:BxNxM/micrOSPackages/dc_motor/package/LM_motor_l298n.py"
+        ],
+        [
+            "LM_motor_l9110.py",
+            "github:BxNxM/micrOSPackages/dc_motor/package/LM_motor_l9110.py"
+        ],
+        [
+            "dc_motor/__init__.py",
+            "github:BxNxM/micrOSPackages/dc_motor/package/__init__.py"
+        ],
+        [
+            "dc_motor/pacman.json",
+            "github:BxNxM/micrOSPackages/dc_motor/package/pacman.json"
+        ],
+        [
+            "dc_motor/shared.py",
+            "github:BxNxM/micrOSPackages/dc_motor/package/shared.py"
+        ]
+    ],
+    "deps": []
+}

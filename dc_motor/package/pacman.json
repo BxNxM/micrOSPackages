@@ -1,0 +1,16 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.0.1"
+    },
+    "url": "github:BxNxM/micrOSPackages/dc_motor",
+    "layout": {
+        "/modules": [
+            "LM_motor_l9110.py",
+            "LM_motor_l298n.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}
