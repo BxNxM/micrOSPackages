@@ -13,7 +13,7 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 
 ## 🌡️ Sensors
 
-| Illustration | Project | Load module(s) | Short description |
+| Illustration | Package | Load module(s) | Short description |
 | --- | --- | --- | --- |
 | <img src="./co2/media/mh_z19c.png" alt="mh_z19c illustration" width="72"><br><img src="./co2/media/mq135.png" alt="mq135 illustration" width="72"> | [co2](./co2/README.md) | `mh_z19c`<br>`mq135` | MH-Z19 NDIR CO2 and MQ-135 air-quality sensor integrations. |
 | <img src="./color_sensor/media/tcs3472.png" alt="tcs3472 illustration" width="96"> | [color_sensor](./color_sensor/README.md) | `tcs3472` | TCS3472 RGB and ambient-light sensor with NeoPixel indicator support. |
@@ -24,7 +24,7 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 
 ## 🤖 Actuators
 
-| Illustration | Project | Load module(s) | Short description |
+| Illustration | Package | Load module(s) | Short description |
 | --- | --- | --- | --- |
 | <img src="./blinky_example/media/blinky.png" alt="blinky illustration" width="96"> | [blinky_example](./blinky_example/README.md) | `blinky` | Minimal package example implementing basic `Pin.OUT` operations. |
 | <img src="./haptic/media/haptic.png" alt="haptic illustration" width="96"> | [haptic](./haptic/README.md) | `haptic` | PWM vibration motor feedback helpers for tap and simple haptic effects. |
@@ -32,21 +32,21 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 
 ## 🖥️ Displays & Visual Output
 
-| Illustration | Project | Load module(s) | Short description |
+| Illustration | Package | Load module(s) | Short description |
 | --- | --- | --- | --- |
 | <img src="./async_oledui/media/oledui.png" alt="oledui illustration" width="96"> | [async_oledui](./async_oledui/README.md) | `oledui` | SSD1306 and SH1106 OLED GUI with trackball support. |
 | <img src="./neopixel_matrix/media/neomatrix.png" alt="neomatrix illustration" width="96"> | [neopixel_matrix](./neopixel_matrix/README.md) | `neomatrix` | NeoPixel matrix animations, frame playback, and web control. |
 
 ## 📡 Connectivity
 
-| Illustration | Project | Load module(s) | Short description |
+| Illustration | Package | Load module(s) | Short description |
 | --- | --- | --- | --- |
 | <img src="./async_mqtt/media/mqtt_client.png" alt="mqtt_client illustration" width="96"> | [async_mqtt](./async_mqtt/README.md) | `mqtt_client` | Async MQTT client with micrOS Notifications integration. |
 | <img src="./sim800/media/sim800.png" alt="sim800 illustration" width="72"> | [sim800](./sim800/README.md) | `sim800`<br>`sim800_http`<br>`sim800mqtt` | SIM800C GSM/GPRS integration with voice, SMS, USSD, HTTP, and MQTT support. |
 
 ## 🧩 Applications & Utilities
 
-| Illustration | Project | Load module(s) | Short description |
+| Illustration | Package | Load module(s) | Short description |
 | --- | --- | --- | --- |
 | <img src="./alarm_system/media/alarm_system.png" alt="alarm_system illustration" width="96"> | [alarm_system](./alarm_system/README.md) | `alarm_system` | Distributed alarm system with local and MQTT zones, event logging, and supervision. |
 | <img src="./garage_remote/media/garage.png" alt="garage illustration" width="96"> | [garage_remote](./garage_remote/README.md) | `garage` | Smart garage remote control integrated with `phone_manager`. |
