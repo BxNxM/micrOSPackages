@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_trackball.py",
+            "github:BxNxM/micrOSPackages/trackball/package/LM_trackball.py"
+        ],
+        [
+            "trackball/__init__.py",
+            "github:BxNxM/micrOSPackages/trackball/package/__init__.py"
+        ],
+        [
+            "trackball/pacman.json",
+            "github:BxNxM/micrOSPackages/trackball/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

@@ -389,24 +389,23 @@ small custom page callback.
 
 ## Dependencies
 
-Package-level `package.json` declares the moved `haptic` package so
-`haptic=True` can import `LM_haptic` after install. The haptic driver is still
-used lazily only when haptic feedback is enabled.
+Package-level `package.json` declares: 
 
-The UI expects these micrOS built-ins or optional Load Modules to be available
-on the device:
+```
+haptic -> LM_haptic
+trackball -> LM_trackball
+```
+
+Built-in dependencies:
 
 ```text
 LM_system
 LM_oled or LM_oled_sh1106
-LM_trackball      optional hardware control
-haptic package / LM_haptic
-                  package dependency; runtime use is optional
 LM_gameOfLife     optional screen saver animation
 LM_esp32          optional CPU temperature in hover popup
 ```
 
-Required pin map entries for trackball control:
+Required pin map entries for trackball and oled control:
 
 ```text
 i2c_scl
@@ -430,5 +429,3 @@ trackball pinmap
   are exposed through ShellCli, REST/WebCli, and generated dashboards.
 - Import optional hardware modules lazily, as done in `peripheries.py`, to keep
   display-only startup light.
-- Do not edit generated files under `toolkit/workspace/` when changing this
-  package.

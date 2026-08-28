@@ -1,5 +1,5 @@
 {
-    "version": "0.0.3",
+    "version": "1.0.0",
     "urls": [
         [
             "LM_oledui.py",
@@ -25,6 +25,10 @@
     "deps": [
         [
             "github:BxNxM/micrOSPackages/haptic",
+            "main"
+        ],
+        [
+            "github:BxNxM/micrOSPackages/trackball",
             "main"
         ]
     ]
