@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_ld2410.py",
+            "github:BxNxM/micrOSPackages/presence/package/LM_ld2410.py"
+        ],
+        [
+            "presence/__init__.py",
+            "github:BxNxM/micrOSPackages/presence/package/__init__.py"
+        ],
+        [
+            "presence/pacman.json",
+            "github:BxNxM/micrOSPackages/presence/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

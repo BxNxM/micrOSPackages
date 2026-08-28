@@ -1,0 +1,15 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "1.0.0"
+    },
+    "url": "github:BxNxM/micrOSPackages/camera",
+    "layout": {
+        "/modules": [
+            "LM_OV2640.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}

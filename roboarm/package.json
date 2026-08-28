@@ -1,0 +1,18 @@
+{
+    "version": "0.0.1",
+    "urls": [
+        [
+            "LM_roboarm.py",
+            "github:BxNxM/micrOSPackages/roboarm/package/LM_roboarm.py"
+        ],
+        [
+            "roboarm/__init__.py",
+            "github:BxNxM/micrOSPackages/roboarm/package/__init__.py"
+        ],
+        [
+            "roboarm/pacman.json",
+            "github:BxNxM/micrOSPackages/roboarm/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}
