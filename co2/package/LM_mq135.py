@@ -12,7 +12,7 @@ __ADC = None
 __ADC_PROP = (1023, 1.0)
 
 
-def __get_resistance():
+def __get_resistance(pin=None):
     """
     Returns the resistance of the sensor in kOhms.
     10.0 - 'RLOAD' The load resistance on the board
@@ -20,10 +20,10 @@ def __get_resistance():
     global __ADC, __ADC_PROP
     if __ADC is None:
         if 'esp8266' in platform:
-            __ADC = ADC(bind_pin('co2'))      # 1V measure range
+            __ADC = ADC(bind_pin('co2', pin))      # 1V measure range
             __ADC_PROP = (1023, 1.0)
         else:
-            __ADC = ADC(Pin(bind_pin('co2')))
+            __ADC = ADC(Pin(bind_pin('co2', pin)))
             __ADC.atten(ADC.ATTN_11DB)                          # 3.6V measure range
             __ADC.width(ADC.WIDTH_10BIT)                        # Default 10 bit ADC
             __ADC_PROP = (1023, 3.6)
@@ -93,11 +93,11 @@ def __ppm_verdict(ppm):
 # Application functions #
 #########################
 
-def load():
+def load(pin=None):
     """
     Initialize mq135 CO2 (ppm) sensor module
     """
-    __get_resistance()
+    __get_resistance(pin=pin)
     return "mq135 CO2 (ppm) sensor - loaded"
 
 def raw_measure_mq135():
@@ -162,4 +162,4 @@ def help(widgets=False):
         (widgets=True) list of widget json for UI generation
     """
     return resolve(('TEXTBOX measure_mq135 temperature=None humidity=None',
-                             'raw_measure_mq135', 'load', 'pinmap'), widgets=widgets)
+                             'raw_measure_mq135', 'load pin=None', 'pinmap'), widgets=widgets)

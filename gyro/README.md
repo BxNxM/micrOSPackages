@@ -43,7 +43,7 @@ qmi8658 pinmap
 ## Usage
 
 ```commandline
-qmi8658 load
+qmi8658 load i2c_sda=None i2c_scl=None
 qmi8658 temperature
 qmi8658 acceleration
 qmi8658 gyro

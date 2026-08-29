@@ -40,7 +40,7 @@ Terminal ready
 import LM_i2s_mic
 import json
 
-from microIO import pinmap_search
+from microIO import bind_pin, pinmap_search
 from Common import micro_task, syslog, console
 from Types import resolve
 
@@ -686,7 +686,10 @@ def load(dataset = 'sound_events.pds',
          frame_size_ms=80,
          pause_duration_ms=500,
          event_buffer_length=1,
-         sd_storage=False):
+         sd_storage=False,
+         i2s_sck=None,
+         i2s_ws=None,
+         i2s_sd=None):
     """
     start micro task for event detection, and mount SD storage if enabled
     :param capture_duration_ms: int - duration of samples to capture at once
@@ -694,7 +697,16 @@ def load(dataset = 'sound_events.pds',
     :param frame_size_ms: int - duration of the audio frames used for features
     :param event_buffer_length: int - number of events to store at once
     :param sd_storage: bool - use SD card storage for the dataset
+    :param i2s_sck: optional I2S serial clock GPIO number
+    :param i2s_ws: optional I2S word select GPIO number
+    :param i2s_sd: optional I2S serial data GPIO number
     """
+    if i2s_sck is not None:
+        bind_pin('i2s_sck', i2s_sck)
+    if i2s_ws is not None:
+        bind_pin('i2s_ws', i2s_ws)
+    if i2s_sd is not None:
+        bind_pin('i2s_sd', i2s_sd)
     if sd_storage:
         from vfs import mount
         from machine import SDCard
@@ -734,8 +746,9 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return resolve(('load dataset=\'sound_events.pds\' capture_duration_ms=192 max_event_duration_ms=3000'\
-                    'frame_size_ms=80 pause_duration_ms=500 event_buffer_length=1 sd_storage=False ',\
+    return resolve(('load dataset=\'sound_events.pds\' capture_duration_ms=192 max_event_duration_ms=3000 '\
+                    'frame_size_ms=80 pause_duration_ms=500 event_buffer_length=1 sd_storage=False '\
+                    'i2s_sck=None i2s_ws=None i2s_sd=None',\
                     'TEXTBOX classify_last_event',\
                     'read_instances',\
                     'record_last_event label',\

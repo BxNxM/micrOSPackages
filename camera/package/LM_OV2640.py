@@ -5,6 +5,7 @@ except Exception as e:
 from time import localtime, sleep
 from json import loads
 from Common import web_endpoint, syslog, exec_cmd
+from microIO import bind_pin, pinmap_search
 from Types import resolve
 
 IN_CAPTURE = False      # Make sure single capture in progress in the same time
@@ -12,13 +13,17 @@ CAM_INIT = False
 FLASH_LIGHT = None      # Flashlight object
 
 
-def load(quality='medium', freq='default', effect="NONE"):
+def load(quality='medium', freq='default', effect="NONE", flash_pin=4):
     """
     Load Camera module OV2640
     :param quality: high (HD), medium (SVGA), low (240x240)
     :param freq: default (not set: 10kHz) or high: 20kHz
     :param effect: NONE (default), OR: NEG, BW, RED, GREEN, BLUE, RETRO
+    :param flash_pin: optional flashlight GPIO number (default: 4)
     """
+    if flash_pin is not None:
+        bind_pin('camera_flash', flash_pin)
+
     if camera is None:
         syslog("Non supported feature - use esp32cam image!")
         return "Non supported feature - use esp32cam image!"
@@ -215,8 +220,9 @@ def _light_init():
     global FLASH_LIGHT
     if FLASH_LIGHT is None:
         from machine import Pin
-        FLASH_LIGHT = Pin(4, Pin.OUT)
+        FLASH_LIGHT = Pin(bind_pin('camera_flash'), Pin.OUT)
     return FLASH_LIGHT
+
 
 def flashlight(state=None):
     """
@@ -231,6 +237,13 @@ def flashlight(state=None):
     return {'S': state}
 
 
+def pinmap():
+    """
+    Shows logical pins used by this Load Module.
+    """
+    return pinmap_search('camera_flash')
+
+
 def help(widgets=False):
     """
     [i] micrOS LM naming convention - built-in help message
@@ -238,7 +251,7 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return resolve(('load quality="medium/low/high" freq="default/high"',
+    return resolve(('load quality="medium/low/high" freq="default/high" flash_pin=4',
         'settings quality=None flip=None mirror=None effect="NONE"',
         'EMBED{"callback": "/cam/stream", "title": "camera stream", "image": true}',
         'SLIDER settings saturation=<0-100>',
@@ -248,5 +261,6 @@ def help(widgets=False):
         'capture',
         'BUTTON photo',
         'BUTTON flashlight state=None',
+        'pinmap',
         '[Hint] after load you can access the /cam/snapshot and /cam/stream endpoints',
         'Thanks to :) https://github.com/lemariva/micropython-camera-driver'), widgets=widgets)

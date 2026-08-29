@@ -559,7 +559,8 @@ def _inst():
 def load(pin_code, apn, apn_user='', apn_pwd='',
          server='', port=1883, client_id=None, user=None, password=None,
          keepalive=60, clean_session=False,
-         will_topic=None, will_msg=None, will_qos=0):
+         will_topic=None, will_msg=None, will_qos=0,
+         tx_pin=16, rx_pin=17):
     """
     Initialize SIM800 modem, GPRS, and connect MQTT.
     :param pin_code: SIM PIN code
@@ -576,6 +577,8 @@ def load(pin_code, apn, apn_user='', apn_pwd='',
     :param will_topic str: Last Will topic
     :param will_msg str: Last Will message
     :param will_qos int: Last Will QoS (0 or 1)
+    :param tx_pin int: UART TX GPIO pin (default: 16)
+    :param rx_pin int: UART RX GPIO pin (default: 17)
     :return str: status message
     """
     if Sim800Mqtt.INSTANCE is not None:
@@ -583,7 +586,8 @@ def load(pin_code, apn, apn_user='', apn_pwd='',
     inst = Sim800Mqtt(pin_code, apn, apn_user, apn_pwd,
                       server, port, client_id, user, password,
                       keepalive, clean_session,
-                      will_topic, will_msg, will_qos)
+                      will_topic, will_msg, will_qos,
+                      tx_pin=tx_pin, rx_pin=rx_pin)
     if not inst.init_modem():
         return 'SIM800MQTT modem init failed.'
     if inst.connect():
@@ -648,7 +652,7 @@ def pinmap():
 def help(widgets=False):
     """[i] micrOS LM naming convention - built-in help message"""
     return resolve((
-        'load pin_code apn server="broker" port=1883 user="u" password="p"',
+        'load pin_code apn server="broker" port=1883 user="u" password="p" tx_pin=16 rx_pin=17',
         'unload',
         'publish topic="t" payload="msg" qos=0',
         'subscribe topic="t" callback=<func> qos=0',

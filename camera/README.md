@@ -25,7 +25,7 @@ pacman uninstall "camera"
 ## Usage
 
 ```commandline
- load quality="medium/low/high" freq="default/high",
+ load quality="medium/low/high" freq="default/high" flash_pin=4,
  settings quality=None flip=None mirror=None effect="NONE",
  settings saturation=<0-100>,
  settings brightness=<0-100>,
@@ -34,6 +34,7 @@ pacman uninstall "camera"
  capture,
  photo,
  flashlight state=None,
+ pinmap,
  [Hint] after load you can access the /cam/snapshot and /cam/stream endpoints,
  Thanks to :) https://github.com/lemariva/micropython-camera-driver,
 ```

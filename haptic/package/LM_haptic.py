@@ -12,13 +12,14 @@ class Haptic:
     WAIT_TO_STOP_MS = 100
     INTENSITY = "low"
 
-def load(intensity=None):
+def load(intensity=None, pin=None):
     """
     Init haptic engine
     :param intensity: low / high / None haptic feedback intensity
+    :param pin: optional physical GPIO number
     """
     if Haptic.HAPTIC_OBJ is None:
-        dimmer_pin = Pin(bind_pin('haptic'))
+        dimmer_pin = Pin(bind_pin('haptic', pin))
         Haptic.HAPTIC_OBJ = PWM(dimmer_pin, freq=20480)
         Haptic.HAPTIC_OBJ.duty(0)
     if intensity in ("high", "low"):
@@ -102,7 +103,7 @@ def pinmap():
 
 
 def help(widgets=False):
-    return resolve(("load intensity='low/high'/None",
+    return resolve(("load intensity='low/high'/None pin=None",
                              "BUTTON tap",
                              "BUTTON effect1",
                              "BUTTON effect2",

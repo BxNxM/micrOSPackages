@@ -21,10 +21,14 @@ STATE_MAP = {
 }
 
 
-def __l298n_init():
+def __l298n_init(ena_pin=10, ina_pin=12, inb_pin=11, enb_pin=3, inc_pin=9, ind_pin=40):
     global __L298N_OBJS
     if not __L298N_OBJS:
-        for index, (name, pin) in enumerate(PIN_BINDINGS):
+        pins = [
+            ('l298n_ENA', ena_pin), ('l298n_INA', ina_pin), ('l298n_INB', inb_pin),
+            ('l298n_ENB', enb_pin), ('l298n_INC', inc_pin), ('l298n_IND', ind_pin)
+        ]
+        for index, (name, pin) in enumerate(pins):
             if index % 3 == 0: # PWM pin
                 pwm = PWM(bind_pin(name, pin), freq=PWM_FREQ)
                 pwm.duty(0)
@@ -48,7 +52,8 @@ def __get_motor_state(motor_index):
 # Application functions #
 #########################
 
-def load(pwm_freq:int=None):
+def load(pwm_freq:int=None, ena_pin=10, ina_pin=12, inb_pin=11,
+         enb_pin=3, inc_pin=9, ind_pin=40):
     """
     [i] micrOS LM naming convention
     Load the L298N motor driver module
@@ -56,7 +61,7 @@ def load(pwm_freq:int=None):
     global PWM_FREQ
     if pwm_freq is not None:
         PWM_FREQ = pwm_freq
-    __l298n_init()
+    __l298n_init(ena_pin, ina_pin, inb_pin, enb_pin, inc_pin, ind_pin)
     return "Motor driver loaded successfully."
 
 
@@ -152,6 +157,7 @@ def help(widgets=False):
         (widgets=True) list of widget json for UI generation
     """
     return (
+        'load pwm_freq=None ena_pin=10 ina_pin=12 inb_pin=11 enb_pin=3 inc_pin=9 ind_pin=40',
         'speed motor=<1/2> speed=<0-1023>', 
         'direction motor=<1/2> forward=<True/False>',
         'coast motor=<1/2>',

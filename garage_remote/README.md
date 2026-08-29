@@ -36,8 +36,8 @@ pacman uninstall "garage_remote"
 ## Usage
 
 ```commandline
-garage load pin_code=1234
-garage load pin_code=1234 phonebook="garage_users.json"
+garage load pin_code=1234 door_pin=18 alarm_pin=20
+garage load pin_code=1234 phonebook="garage_users.json" door_pin=18 alarm_pin=20
 garage unload
 garage open_garage
 garage press_alarm_button
@@ -45,6 +45,7 @@ garage garage_alarm_off minutes=10
 garage garage_alarm_off minutes=10 phone="+36201234567"
 garage garage_alarm_on
 garage garage_alarm_on phone="+36201234567"
+garage pinmap
 ```
 
 ## Call-based Garage Door Control

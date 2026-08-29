@@ -153,13 +153,13 @@ class QMI8658:
 #   Public functions  #
 #######################
 
-def load():
+def load(i2c_sda=None, i2c_scl=None):
     """
     Load the QMI8658 sensor instance.
     The QMI8658 is a motion sensor that measures acceleration, angular velocity (gyroscope), and temperature
     """
     if QMI8658.INSTANCE is None:
-        QMI8658(I2C(0, sda=Pin(bind_pin('i2c_sda')), scl=Pin(bind_pin('i2c_scl'))))
+        QMI8658(I2C(0, sda=Pin(bind_pin('i2c_sda', i2c_sda)), scl=Pin(bind_pin('i2c_scl', i2c_scl))))
     return QMI8658.INSTANCE
 
 
@@ -201,4 +201,4 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return 'load', 'temperature', 'acceleration', 'gyro', 'measure', 'pinmap'
+    return 'load i2c_sda=None i2c_scl=None', 'temperature', 'acceleration', 'gyro', 'measure', 'pinmap'

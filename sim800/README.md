@@ -19,6 +19,8 @@ pacman uninstall "sim800"
 sim800/package/
 ├── __init__.py       # Package loader
 ├── LM_sim800.py      # micrOS shell interface
+├── LM_sim800_http.py # HTTP client helper
+├── LM_sim800mqtt.py  # MQTT client helper
 ├── modem.py          # Sim800 class: UART, AT commands, SMS, calls, USSD
 ├── codec.py          # GSM7/UCS2/PDU encode/decode
 └── notify.py         # SMS Notify subscriber
@@ -27,6 +29,8 @@ sim800/package/
 | File | Responsibility |
 |------|---------------|
 | `LM_sim800.py` | Thin micrOS command interface, event system, load/reset |
+| `LM_sim800_http.py` | HTTP commands over SIM800 GPRS |
+| `LM_sim800mqtt.py` | MQTT commands over SIM800 GPRS |
 | `modem.py` | Hardware communication (UART/AT), SMS queue, call/USSD |
 | `codec.py` | Pure data transforms — GSM7, UCS2, PDU build/parse |
 | `notify.py` | Notify subscriber — sends SMS only when explicitly requested |
@@ -72,6 +76,13 @@ sim800 send_command "AT+CPIN?" timeout=1000
 sim800 clear_sms target="ALL"
 sim800 get_sms target="ALL"
 sim800 pinmap
+```
+
+### SIM800 MQTT
+
+```commandline
+sim800mqtt load pin_code apn server="broker" port=1883 user="u" password="p" tx_pin=16 rx_pin=17
+sim800mqtt pinmap
 ```
 
 ## SMS Notify Integration

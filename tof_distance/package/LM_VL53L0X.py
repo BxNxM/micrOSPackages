@@ -30,8 +30,8 @@ class TimeoutError(RuntimeError):
 
 
 class VL53L0X:
-    def __init__(self, address=57):
-        self.i2c = I2C(-1, Pin(bind_pin('i2c_scl')), Pin(bind_pin('i2c_sda')), freq=9600)
+    def __init__(self, address=57, i2c_sda=None, i2c_scl=None):
+        self.i2c = I2C(-1, Pin(bind_pin('i2c_scl', i2c_scl)), Pin(bind_pin('i2c_sda', i2c_sda)), freq=9600)
         self.address = address
         self.init()
         self._started = False
@@ -341,16 +341,26 @@ class VL53L0X:
         return value
 
 
+def load(address=57, reset=False, i2c_sda=None, i2c_scl=None):
+    """
+    Load the VL53L0X Time of Flight sensor instance.
+    """
+    global __TOF_OBJ
+    if reset:
+        __TOF_OBJ = None
+    if __TOF_OBJ is None:
+        __TOF_OBJ = VL53L0X(address=address, i2c_sda=i2c_sda, i2c_scl=i2c_scl)
+    return __TOF_OBJ
+
+
 def measure():
     """
     Experimental - Time of Flight Distance Sensor
     """
-    global __TOF_OBJ
-    if __TOF_OBJ is None:
-        __TOF_OBJ = VL53L0X()
-    __TOF_OBJ.start()
-    data = __TOF_OBJ.read()
-    __TOF_OBJ.stop()
+    sensor = load()
+    sensor.start()
+    data = sensor.read()
+    sensor.stop()
     return data
 
 
@@ -376,4 +386,4 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return 'measure', 'pinmap'
+    return 'load address=57 reset=False i2c_sda=None i2c_scl=None', 'measure', 'pinmap'

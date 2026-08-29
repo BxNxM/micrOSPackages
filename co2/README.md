@@ -40,7 +40,7 @@ range of a 3.3 V MCU.
 ### MH-Z19B/MH-Z19C
 
 ```text
-mh_z19c load
+mh_z19c load tx_pin=16 rx_pin=17 hd_pin=19
 mh_z19c measure
 mh_z19c start interval=5000 topic=MH_Z19C
 mh_z19c stop
@@ -63,7 +63,7 @@ measurement command.
 ### MQ-135
 
 ```text
-mq135 load
+mq135 load pin=None
 mq135 raw_measure_mq135
 mq135 measure_mq135 temperature=23 humidity=45
 ```

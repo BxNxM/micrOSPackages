@@ -22,7 +22,7 @@ pacman uninstall "sound_event"
 
 ```commandline
 sound_event load
-sound_event load dataset='sound_events.pds' capture_duration_ms=192 max_event_duration_ms=3000 frame_size_ms=80 pause_duration_ms=500 event_buffer_length=1 sd_storage=False
+sound_event load dataset='sound_events.pds' capture_duration_ms=192 max_event_duration_ms=3000 frame_size_ms=80 pause_duration_ms=500 event_buffer_length=1 sd_storage=False i2s_sck=None i2s_ws=None i2s_sd=None
 sound_event classify_last_event
 sound_event record_last_event label='finger_snaps'
 sound_event get_classes

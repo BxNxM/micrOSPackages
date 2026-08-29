@@ -19,7 +19,7 @@ from machine import Pin, UART
 import utime
 from microIO import bind_pin, pinmap_search
 
-ser = UART(1, baudrate = 256000, tx=Pin(bind_pin('tx')), rx=Pin(bind_pin('rx')), timeout = 1)
+ser = None
 HEADER = bytes([0xfd, 0xfc, 0xfb, 0xfa])
 TERMINATOR = bytes([0x04, 0x03, 0x02, 0x01])
 NULLDATA = bytes([])
@@ -40,6 +40,30 @@ meas = {
     "stationary_energy": 0,
     "detection_distance": 0 }
 
+
+def _serial(reload=False, tx_pin=None, rx_pin=None):
+    global ser
+    if reload and ser is not None:
+        try:
+            ser.deinit()
+        except Exception:
+            pass
+        ser = None
+    if ser is None:
+        ser = UART(1, baudrate=256000,
+                   tx=Pin(bind_pin('tx', tx_pin)),
+                   rx=Pin(bind_pin('rx', rx_pin)),
+                   timeout=1)
+    return ser
+
+
+def load(reload=False, tx_pin=None, rx_pin=None):
+    """
+    Load the LD2410 presence sensor UART.
+    """
+    _serial(reload=reload, tx_pin=tx_pin, rx_pin=rx_pin)
+    return "LD2410 presence sensor - loaded"
+
 def print_bytes(data):
     if len(data) == 0:
         print("<no data>")
@@ -58,11 +82,12 @@ def bytes_to_str(data):
     return text
 
 def send_command(cmd, data=NULLDATA, response_expected=True):
+    uart = _serial()
     cmd_data_len = bytes([len(cmd) + len(data), 0x00])
     frame = HEADER + cmd_data_len + cmd + data + TERMINATOR
-    ser.write(frame)
+    uart.write(frame)
     if response_expected:
-        response = ser.read()
+        response = uart.read()
     else:
         response = NULLDATA
     return response
@@ -88,7 +113,7 @@ def end_engineering():
     print_bytes(response)
 
 def read_serial_buffer():
-    response = ser.read()
+    response = _serial().read()
     print_bytes(response)
     return response
 
@@ -129,9 +154,10 @@ def _parse_report(data):
     _print_meas()
 
 def _read_serial_until(identifier):
+    uart = _serial()
     content = bytes([])
     while len(identifier) > 0:
-        v = ser.read(1)
+        v = uart.read(1)
         if v is None:
             # timeout
             return None
@@ -144,7 +170,7 @@ def _read_serial_until(identifier):
     return content
 
 def serial_flush():
-    dummy = ser.read()
+    dummy = _serial().read()
     return dummy
 
 def _read_serial_frame():
@@ -156,7 +182,7 @@ def _read_serial_frame():
     if header == None:
         return None
     # read the rest of the frame:
-    response = ser.read(23-4)
+    response = _serial().read(23-4)
     if response == None:
         return None
     response = header + response
@@ -200,4 +226,4 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return 'read', 'firmware_version', 'serial_flush', 'pinmap'
+    return 'load reload=False tx_pin=None rx_pin=None', 'read', 'firmware_version', 'serial_flush', 'pinmap'

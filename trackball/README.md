@@ -19,7 +19,7 @@ pacman uninstall "trackball"
 ## Usage
 
 ```commandline
- load width=100 height=100 irq_sampling=50 sensitivity=5,
+ load width=100 height=100 irq_sampling=50 sensitivity=5 reload=False i2c_sda=None i2c_scl=None trackball_int=None,
  read,
  get,
  settings irq_sampling=None sensitivity=None,

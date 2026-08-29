@@ -33,8 +33,8 @@ Initialize the trackball first when hardware navigation is used. This creates
 the trackball IRQ handler; `oledui load` then subscribes the UI callback.
 
 ```commandline
-trackball load width=127 height=63 irq_sampling=50 sensitivity=5
-oledui load width=128 height=64 oled_type='sh1106' control='trackball' poweroff=30 haptic=False
+trackball load width=127 height=63 irq_sampling=50 sensitivity=5 reload=False i2c_sda=None i2c_scl=None trackball_int=None
+oledui load width=128 height=64 oled_type='sh1106' control='trackball' poweroff=30 haptic=False i2c_sda=None i2c_scl=None trackball_int=None haptic_pin=None
 ```
 
 Minimal display-only startup:
@@ -405,12 +405,13 @@ LM_gameOfLife     optional screen saver animation
 LM_esp32          optional CPU temperature in hover popup
 ```
 
-Required pin map entries for trackball and oled control:
+Required pin map entries for trackball, OLED control, and optional haptic feedback:
 
 ```text
 i2c_scl
 i2c_sda
 trackball_int
+haptic
 ```
 
 Use the trackball pin helper to inspect wiring:

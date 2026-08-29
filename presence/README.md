@@ -25,6 +25,7 @@ pacman uninstall "presence"
 ## Usage
 
 ```commandline
+load reload=False tx_pin=None rx_pin=None
 read
 firmware_version
 serial_flush

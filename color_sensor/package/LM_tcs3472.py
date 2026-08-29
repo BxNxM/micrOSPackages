@@ -20,8 +20,8 @@ from LM_cluster import run as cluster_run                                       
 class TCS3472:
     INSTANCE = None
 
-    def __init__(self, address=0x29, led_pin=None):
-        self._bus = I2C(sda=Pin(bind_pin('i2c_sda')), scl=Pin(bind_pin('i2c_scl')))
+    def __init__(self, address=0x29, led_pin=None, i2c_sda=None, i2c_scl=None):
+        self._bus = I2C(sda=Pin(bind_pin('i2c_sda', i2c_sda)), scl=Pin(bind_pin('i2c_scl', i2c_scl)))
         self._i2c_address = address
         self._bus.writeto(self._i2c_address, b'\x80\x03')
         self._bus.writeto(self._i2c_address, b'\x81\x2b')
@@ -75,13 +75,17 @@ class TCS3472:
 
 ############################ Exposed functions ############################
 
-def load(led_pin=20):
+def load(led_pin=20, i2c_sda=None, i2c_scl=None, neop=None):
     """
     Load the TCS3472 Color sensor instance.
+    :param led_pin: optional, default pin 20
+    :param i2c_sda: optional, sensor i2c resolved from IO_ by default
+    :param i2c_scl: optional, sensor i2c -||-
+    :param neop: optional, indicator led, -||-
     """
     if TCS3472.INSTANCE is None:
-        TCS3472(led_pin=led_pin)
-        neo_load(ledcnt=1)
+        TCS3472(led_pin=led_pin, i2c_sda=i2c_sda, i2c_scl=i2c_scl)
+        neo_load(ledcnt=1, pin=neop)
         led(False)
     return TCS3472.INSTANCE
 
@@ -170,7 +174,7 @@ def help(widgets=False):
     """
     TCS3472 Color sensor
     """
-    return resolve(('load led_pin=20',
+    return resolve(('load led_pin=20 i2c_sda=None i2c_scl=None neop=None',
                     'TEXTBOX measure',
                     'BUTTON led state=<True,False>',
                     'SLIDER led state=True br=<0-100-5>',

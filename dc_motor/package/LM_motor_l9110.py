@@ -11,15 +11,23 @@ __L9110_OBJS = []
 #         ANALOG DIMMER WITH PWM        #
 #########################################
 
-def __l9110_init():
+def __l9110_init(dir_1_pin=None, dir_2_pin=None):
     global __L9110_OBJS
     if len(__L9110_OBJS) == 0:
         from machine import Pin, PWM
-        __L9110_OBJS.append(PWM(Pin(bind_pin('l9110dir_1')), freq=1024))
-        __L9110_OBJS.append(PWM(Pin(bind_pin('l9110dir_2')), freq=1024))
+        __L9110_OBJS.append(PWM(Pin(bind_pin('l9110dir_1', dir_1_pin)), freq=1024))
+        __L9110_OBJS.append(PWM(Pin(bind_pin('l9110dir_2', dir_2_pin)), freq=1024))
         __L9110_OBJS[0].duty(0)     # Set default speed (PWM)
         __L9110_OBJS[1].duty(0)     # Set default speed (PWM)
     return __L9110_OBJS
+
+
+def load(dir_1_pin=None, dir_2_pin=None):
+    """
+    Load the L9110 motor driver module.
+    """
+    __l9110_init(dir_1_pin=dir_1_pin, dir_2_pin=dir_2_pin)
+    return "L9110 motor driver loaded successfully."
 
 
 def motor_control(direc=None, speed=None):
@@ -55,4 +63,4 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return 'motor_control direc=<0/1> speed=<0-1000>', 'pinmap'
+    return 'load dir_1_pin=None dir_2_pin=None', 'motor_control direc=<0/1> speed=<0-1000>', 'pinmap'

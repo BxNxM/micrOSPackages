@@ -50,14 +50,14 @@ class MHZ19:
     SENSOR_TASK = 'mh_z19c.sensor'
     CALIBRATE_TASK = 'mh_z19c.calibrate'
 
-    def __init__(self):
+    def __init__(self, tx_pin=16, rx_pin=17, hd_pin=19):
         self.uart_no = 1
         self.ppm = 0
         self.temp = 0
         self.co2status = 0
-        self.tx_pin = Pin(bind_pin('mh_z19c_tx', 16))
-        self.rx_pin = Pin(bind_pin('mh_z19c_rx', 17))
-        self.hd_pin = Pin(bind_pin('mh_z19c_hd', 19), Pin.OUT, Pin.PULL_UP)
+        self.tx_pin = Pin(bind_pin('mh_z19c_tx', tx_pin))
+        self.rx_pin = Pin(bind_pin('mh_z19c_rx', rx_pin))
+        self.hd_pin = Pin(bind_pin('mh_z19c_hd', hd_pin), Pin.OUT, Pin.PULL_UP)
         self.start()
 
     def start(self):
@@ -119,13 +119,13 @@ class MHZ19:
 # Application functions #
 #########################
 
-def load():
+def load(tx_pin=16, rx_pin=17, hd_pin=19):
     """
     Create MH-Z19 CO2 sensor (over UART)
     """
 
     if MHZ19.INSTANCE is None:
-        MHZ19.INSTANCE = MHZ19()
+        MHZ19.INSTANCE = MHZ19(tx_pin=tx_pin, rx_pin=rx_pin, hd_pin=hd_pin)
     return MHZ19.INSTANCE
 
 
@@ -203,6 +203,6 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return resolve(('load',
+    return resolve(('load tx_pin=16 rx_pin=17 hd_pin=19',
                     'BUTTON start interval=5000',
                     'BUTTON stop', 'TEXTBOX measure', 'calibrate', 'pinmap'), widgets=widgets)

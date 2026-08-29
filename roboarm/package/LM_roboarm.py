@@ -4,6 +4,7 @@ import LM_servo as servo
 from LM_switch import set_state, pinmap as switch_pinmap
 from Common import transition, micro_task, data_dir
 from Types import resolve
+from microIO import bind_pin
 
 
 class RoboArm:
@@ -36,11 +37,20 @@ def __persistent_cache_manager(mode):
         pass
 
 
-def load():
+def load(servo_1_pin=None, servo_2_pin=None, switch_pin=None):
     """
     Initiate roboarm module
     - move servo motors to middle position
+    :param servo_1_pin: optional first servo GPIO number
+    :param servo_2_pin: optional second servo GPIO number
+    :param switch_pin: optional laser switch GPIO number
     """
+    if servo_1_pin is not None:
+        bind_pin('servo_1', servo_1_pin)
+    if servo_2_pin is not None:
+        bind_pin('servo_2', servo_2_pin)
+    if switch_pin is not None:
+        bind_pin('switch_1', switch_pin)
     # Initial positioning
     x, y = RoboArm.CENTER_XY, RoboArm.CENTER_XY
     servo.sduty(x)
@@ -288,5 +298,5 @@ def help(widgets=False):
                              'BUTTON play deinit=True',
                              'record clean=False rec_limit=8',
                              'random x_range=20 y_range=20 speed_ms=5',
-                             'load', 'pinmap',
+                             'load servo_1_pin=None servo_2_pin=None switch_pin=None', 'pinmap',
                              'STATUS status'), widgets=widgets)

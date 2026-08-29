@@ -14,7 +14,7 @@ All functions are callable from ShellCli / WebCli.
 """
 
 from machine import Pin
-from microIO import bind_pin
+from microIO import bind_pin, pinmap_search
 import utime as time  # Micropython-friendly time module
 
 
@@ -86,6 +86,13 @@ def blink(count=10, delay_ms=200):
     return "Blinky: blink sequence finished"
 
 
+def pinmap():
+    """
+    Shows logical pins used by this Load Module.
+    """
+    return pinmap_search('led')
+
+
 def help(widgets=False):
     """
     micrOS LM naming convention - built-in help message.
@@ -99,4 +106,5 @@ def help(widgets=False):
         "off",
         "toggle",
         "blink count=10 delay_ms=200",
+        "pinmap",
     )

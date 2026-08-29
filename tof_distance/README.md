@@ -21,6 +21,7 @@ pacman uninstall "tof_distance"
 ## Usage
 
 ```commandline
+VL53L0X load address=57 reset=False i2c_sda=None i2c_scl=None
 VL53L0X measure
 VL53L0X pinmap
 ```

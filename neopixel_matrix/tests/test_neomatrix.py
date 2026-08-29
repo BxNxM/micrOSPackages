@@ -84,7 +84,8 @@ def _load_neomatrix_module():
     sys.modules["neopixel"] = neopixel
 
     microIO = types.ModuleType("microIO")
-    microIO.bind_pin = lambda name, pin: pin
+    microIO.bind_pin = lambda name, pin=None: pin
+    microIO.pinmap_search = lambda pins: {p: None for p in pins}
     sys.modules["microIO"] = microIO
 
     types_mod = types.ModuleType("Types")

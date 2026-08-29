@@ -25,9 +25,24 @@ pacman uninstall "dc_motor"
 
 ## Usage
 
+### motor_l298n
+
 ```commandline
-motor_l298n load
-motor_l298n do
+load pwm_freq=None ena_pin=10 ina_pin=12 inb_pin=11 enb_pin=3 inc_pin=9 ind_pin=40
+speed motor=<1/2> speed=<0-1023>
+direction motor=<1/2> forward=<True/False>
+coast motor=<1/2>
+brake motor=<1/2>
+state motor=<0/1/2>
+pinmap
+```
+
+### motor_l9110
+
+```commandline
+load dir_1_pin=None dir_2_pin=None
+motor_control direc=<0/1> speed=<0-1000>
+pinmap
 ```
 
 [documentation](https://htmlpreview.github.io/?https://github.com/BxNxM/micrOS/blob/master/micrOS/client/sfuncman/sfuncman.html#external-modules)

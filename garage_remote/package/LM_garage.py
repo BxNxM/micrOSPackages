@@ -6,6 +6,7 @@ import LM_users as users
 from machine import Pin
 from Common import micro_task, console, exec_cmd
 from Notify import Notify
+from microIO import bind_pin, pinmap_search
 from Types import resolve
 
 # Phone book name for this module
@@ -43,8 +44,8 @@ class RelayButton:
         :param tag str: unique identifier and micro_task tag
         :param duration int: button press duration in ms
         """
-        self.pin = Pin(pin_num, Pin.OUT, value=0)
         self.tag = tag
+        self.pin = Pin(bind_pin(self.tag, pin_num), Pin.OUT, value=0)
         self.duration = duration
         RelayButton.BUTTONS[tag] = self
 
@@ -64,11 +65,11 @@ class RelayButton:
             self.pin.value(0)
 
 
-def _instantiate_relay():
+def _instantiate_relay(door_pin=18, alarm_pin=20):
     """Create relay button instances."""
     if not RelayButton.BUTTONS:
-        RelayButton(18, 'relay.door')
-        RelayButton(20, 'relay.alarm')
+        RelayButton(door_pin, 'relay.door')
+        RelayButton(alarm_pin, 'relay.alarm')
         return "Relays instantiated."
     return "Relays already instantiated."
 
@@ -225,13 +226,15 @@ def _handle_sms(sms):
         _logger(f"Alarm CMD by {user['name']} ({user['phone']}): {text}")
         _handle_alarm_command(text, user["phone"])
 
-def load(pin_code, phonebook='garage_users.json'):
+def load(pin_code, phonebook='garage_users.json', door_pin=18, alarm_pin=20):
     """Initialize garage module: relay, users, SIM800, subscribe to events.
     :param pin_code int: SIM card PIN code
     :param phonebook str: phonebook JSON filename (default: garage_users.json)
+    :param door_pin int: garage door relay GPIO pin (default: 18)
+    :param alarm_pin int: alarm remote relay GPIO pin (default: 20)
     :return str: status message
     """
-    _instantiate_relay()
+    _instantiate_relay(door_pin=door_pin, alarm_pin=alarm_pin)
     users.load(json_file=phonebook, book=_BOOK)
     sim.load(pin_code=pin_code)
     # Flush stale UART data before subscribing
@@ -258,6 +261,12 @@ def unload():
 # LM helper functions #
 #######################
 
+def pinmap():
+    """
+    Shows logical pins used by this Load Module.
+    """
+    return pinmap_search(['relay.door', 'relay.alarm'])
+
 def help(widgets=False):
     """
     [i] micrOS LM naming convention - built-in help message
@@ -265,12 +274,13 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return resolve(('load pin_code=1234',
-                    'load pin_code=1234 phonebook="garage_users.json"',
+    return resolve(('load pin_code=1234 door_pin=18 alarm_pin=20',
+                    'load pin_code=1234 phonebook="garage_users.json" door_pin=18 alarm_pin=20',
                     'unload',
                     'open_garage',
                     'press_alarm_button',
                     'garage_alarm_off minutes=10',
                     'garage_alarm_off minutes=10 phone="+36201234567"',
                     'garage_alarm_on',
+                    'pinmap',
                     'garage_alarm_on phone="+36201234567"'), widgets=widgets)

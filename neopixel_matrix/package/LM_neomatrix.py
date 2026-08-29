@@ -1,7 +1,7 @@
 from neopixel import NeoPixel
 from machine import Pin
 
-from microIO import bind_pin
+from microIO import bind_pin, pinmap_search
 from Types import resolve
 from Common import manage_task, AnimationPlayer, data_dir, web_endpoint
 
@@ -156,14 +156,15 @@ class NeoPixelMatrix(AnimationPlayer):
 ##########################################################################################################
 # --- Example usage with micrOS framework ---
 
-def load(width=8, height=8, neop=14, i2c_sda=11, i2c_scl=12):
+def load(width=8, height=8, neop=14, i2c_sda=11, i2c_scl=12, builtin=1):
     """
     Load NeoPixelMatrix instance.
     :param width: neopixel matrix width (default: 8)
     :param height: neopixel matrix height (default: 8)
-    :param neop: neopixel pin number (default: 14)
-    :param i2c_sda: i2c bus data pin number (default: 11) for QMI8658C GYRO
-    :param i2c_scl: i2c bus clock pin number (default: 12) for QMI8658C GYRO
+    :param neop: neopixel GPIO number (default: 14)
+    :param i2c_sda: I2C data GPIO number for QMI8658C GYRO (default: 11)
+    :param i2c_scl: I2C clock GPIO number for QMI8658C GYRO (default: 12)
+    :param builtin: built-in/progress LED GPIO number (default: 1)
 
     ESP32-S3 Matrix 8x8 RGB-LED WiFi Bluetooth With QST Attitude Gyro Sensor QMI8658C
       https://spotpear.com/shop/ESP32-S3FH4R2-Matrix-8x8-RGB-LED-WiFi-Bluetooth-QST-Attitude-Gyro-Sensor-QMI8658C-Arduino-Python-ESP-IDF.html
@@ -175,7 +176,7 @@ def load(width=8, height=8, neop=14, i2c_sda=11, i2c_scl=12):
         bind_pin('i2c_sda', i2c_sda)
         bind_pin('i2c_scl', i2c_scl)
         # Set default builtin led (no built-in led on hw, external available...)
-        bind_pin('builtin', 1)
+        bind_pin('builtin', builtin)
     return NeoPixelMatrix.INSTANCE
 
 
@@ -283,6 +284,13 @@ def status():
     return {'R': r, 'G': g, 'B': b, 'S': state, 'BR': br}
 
 
+def pinmap():
+    """
+    Shows logical pins used by this Load Module.
+    """
+    return pinmap_search(['neop', 'i2c_sda', 'i2c_scl', 'builtin'])
+
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
@@ -314,7 +322,7 @@ def noise(speed_ms:int=85):
 
 
 def help(widgets=False):
-    return resolve(('load width=8 height=8 neop=14 i2c_sda=11 i2c_scl=12',
+    return resolve(('load width=8 height=8 neop=14 i2c_sda=11 i2c_scl=12 builtin=1',
                      'pixel x y color=(10, 3, 0) show=True',
                      'BUTTON clear',
                      'COLOR color_fill r=<0-255-5> g=<0-255-5> b=<0-255-5>',
@@ -328,4 +336,5 @@ def help(widgets=False):
                      'SLIDER control speed_ms=<1-200> bt_draw=None',
                      'draw_colormap bitmap=[(0,0,(10,2,0)),(x,y,color),...]',
                      'get_colormap',
+                     'pinmap',
                      'STATUS status'), widgets=widgets)

@@ -37,7 +37,7 @@ For example, `IO_tinypico.py` maps `haptic` to GPIO 32.
 
 ```commandline
 haptic load
-haptic load intensity=high
+haptic load intensity=high pin=None
 haptic tap
 haptic effect1
 haptic effect2

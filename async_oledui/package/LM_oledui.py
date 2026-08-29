@@ -12,6 +12,7 @@ from async_oledui import peripheries as periph
 from utime import ticks_ms, ticks_diff, sleep_ms
 from Common import syslog, micro_task, manage_task, exec_cmd
 from Types import resolve
+from microIO import bind_pin
 # Core modules
 from Config import cfgget
 # Load Modules
@@ -336,7 +337,8 @@ def _empty_page(display, w, h, x, y):
 #                                  Public functions                             #
 #################################################################################
 
-def load(width=128, height=64, oled_type="sh1106", control='trackball', poweroff=None, haptic=False):
+def load(width=128, height=64, oled_type="sh1106", control='trackball', poweroff=None,
+         haptic=False, i2c_sda=None, i2c_scl=None, trackball_int=None, haptic_pin=None):
     """
     Create async oled UI
     :param width: screen width in pixels
@@ -345,9 +347,19 @@ def load(width=128, height=64, oled_type="sh1106", control='trackball', poweroff
     :param control: trackball / None
     :param poweroff: power off after given seconds
     :param haptic: enable (True) / disable (False) haptic feedbacks (vibration)
+    # Optional
+    :param i2c_sda: optional OLED/trackball I2C data GPIO number
+    :param i2c_scl: optional OLED/trackball I2C clock GPIO number
+    :param trackball_int: optional trackball interrupt GPIO number
+    :param haptic_pin: optional haptic motor GPIO number
     """
     if PageUI.INSTANCE is None:
-        ui = PageUI(width, height, poweroff=poweroff, oled_type=oled_type, control=control, haptic=haptic)
+        for tag, pin in (('i2c_sda', i2c_sda), ('i2c_scl', i2c_scl),
+                         ('trackball_int', trackball_int), ('haptic', haptic_pin)):
+            if pin is not None:
+                bind_pin(tag, pin)
+        ui = PageUI(width, height, poweroff=poweroff, oled_type=oled_type,
+                    control=control, haptic=haptic)
         # Add default pages...
         ui.add_page([_system_page, _intercon_nodes_page, _empty_page])
         ui.create()         # Header(4), AppPage(1), PagerIndicator
@@ -425,7 +437,7 @@ def help(widgets=False):
     - with async frames
     """
     return resolve(
-        ("load width=128 height=64 oled_type='sh1106/ssd1306' control='trackball' poweroff=None/sec haptic=False",
+        ("load width=128 height=64 oled_type='sh1106/ssd1306' control='trackball' poweroff=None/sec haptic=False i2c_sda=None i2c_scl=None trackball_int=None haptic_pin=None",
                   "BUTTON control cmd=<prev,press,next,on,off>",
                   "BUTTON debug state=<True,False>", "cursor x y",
                   "popup msg='text'", "cancel_popup",

@@ -20,7 +20,7 @@ pacman uninstall "neopixel_matrix"
 ## Usage
 
 ```commandline
-neomatrix load width=8 height=8 neop=14 i2c_sda=11 i2c_scl=12
+neomatrix load width=8 height=8 neop=14 i2c_sda=11 i2c_scl=12 builtin=1
 pixel x y color=(10, 3, 0) show=True
 clear
 color_fill r=<0-255-5> g=<0-255-5> b=<0-255-5>
@@ -34,6 +34,7 @@ play_file file="animation.jsonl" speed_ms=85
 control speed_ms=<1-200> bt_draw=None
 draw_colormap bitmap=[(0,0,(10,2,0)),(x,y,color),...]
 get_colormap
+pinmap
 status
 ```
 

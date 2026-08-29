@@ -33,7 +33,7 @@ pacman uninstall "roboarm"
  play deinit=True,
  record clean=False rec_limit=8,
  random x_range=20 y_range=20 speed_ms=5,
- load,
+ load servo_1_pin=None servo_2_pin=None switch_pin=None,
  pinmap,
  status,
 ```

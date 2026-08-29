@@ -22,7 +22,7 @@ pacman uninstall "color_sensor"
 
 ```commandline
 tcs3472 load
-tcs3472 load led_pin=20
+tcs3472 load led_pin=20 i2c_sda=None i2c_scl=None neop=None
 tcs3472 measure
 tcs3472 led state=True br=20
 tcs3472 led state=False

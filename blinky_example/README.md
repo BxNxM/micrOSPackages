@@ -26,6 +26,7 @@ blinky on
 blinky off
 blinky toggle
 blinky blink count=10 delay_ms=200
+blinky pinmap
 ```
 
 > Blink every 100ms with Task
