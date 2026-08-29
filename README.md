@@ -21,7 +21,7 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 | <img src="./ultrasonic_distance/media/hcsr04.png" alt="hcsr04 illustration" width="72"><br><img src="./ultrasonic_distance/media/rcwl1670.png" alt="rcwl1670 illustration" width="72"> | [ultrasonic_distance](./ultrasonic_distance/README.md) | `hcsr04`<br>`rcwl1670` | HC-SR04 and RCWL-1670 ultrasonic trigger/echo distance sensors. |
 | <img src="./sound_event/media/sound_event.png" alt="sound_event illustration" width="96"> | [sound_event](./sound_event/README.md) | `sound_event` | Trainable I2S microphone sound-event recognition with labeled datasets. |
 | <img src="./tof_distance/media/VL53L0X.png" alt="VL53L0X illustration" width="96"> | [tof_distance](./tof_distance/README.md) | `VL53L0X` | VL53L0X time-of-flight distance sensor integration. |
-| <img src="./camera/media/OV2640.png" alt="OV2640 illustration" width="96"> | [camera](./camera/README.md) | `camera` | Camera sensor (OV2640) support, with image stream and photo features over http. |
+| <img src="./camera/media/OV2640.png" alt="OV2640 illustration" width="96"> | [camera](./camera/README.md) | `OV2640` | Camera sensor (OV2640) support, with image stream and photo features over http. |
 
 
 ## 🤖 Actuators
