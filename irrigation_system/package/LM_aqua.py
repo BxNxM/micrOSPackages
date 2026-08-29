@@ -38,7 +38,7 @@ def _settings_post(_, body):
 
 
 def _register_web():
-    web_endpoint("aqua/ui", "irrigation_system/aqua.html")
+    web_endpoint("aqua", "irrigation_system/aqua.html")
     web_endpoint("aqua/settings", _settings_get)
     web_endpoint("aqua/settings", _settings_post, "POST")
     return True
@@ -61,7 +61,7 @@ def _dashboard_state(measure=False):
         "level_sensor": monitor["level_sensor"],
         "task": pump["task"],
         "endpoints": {
-            "ui": "/aqua/ui",
+            "ui": "/aqua",
             "api": "/rest/aqua",
             "settings": "/aqua/settings",
         },
@@ -79,8 +79,8 @@ def load(web=True, pump_pin=None):
     except Exception as e:
         if not web:
             raise
-        return "Aqua irrigation system loaded. Pump init failed: {}. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings".format(e)
-    return "Aqua irrigation system loaded. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings"
+        return "Aqua irrigation system loaded. Pump init failed: {}. UI: /aqua API: /rest/aqua Settings: /aqua/settings".format(e)
+    return "Aqua irrigation system loaded. UI: /aqua API: /rest/aqua Settings: /aqua/settings"
 
 
 def configure(tank_width_cm=None, tank_depth_cm=None, tank_height_cm=None,

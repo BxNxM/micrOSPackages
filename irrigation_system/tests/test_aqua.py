@@ -207,9 +207,10 @@ class TestAquaSkeleton(unittest.TestCase):
     def test_default_status_has_tank_and_flow_math(self):
         data = self.aqua.status()
 
-        self.assertEqual(data["endpoints"]["ui"], "/aqua/ui")
+        self.assertEqual(data["endpoints"]["ui"], "/aqua")
         self.assertEqual(data["endpoints"]["api"], "/rest/aqua")
         self.assertEqual(data["endpoints"]["settings"], "/aqua/settings")
+        self.assertNotIn("setting", data["endpoints"])
         self.assertNotIn("alias", data["endpoints"])
         self.assertEqual(data["config"]["level_module"], "manual")
         self.assertEqual(data["config"]["min_level_cm"], 2.0)
@@ -258,7 +259,7 @@ class TestAquaSkeleton(unittest.TestCase):
     def test_load_books_pump_pin_and_pinmap_reports_it(self):
         message = self.aqua.load(web=False, pump_pin=27)
 
-        self.assertEqual(message, "Aqua irrigation system loaded. UI: /aqua/ui API: /rest/aqua Settings: /aqua/settings")
+        self.assertEqual(message, "Aqua irrigation system loaded. UI: /aqua API: /rest/aqua Settings: /aqua/settings")
         self.assertEqual(sys.modules["microIO"].BOUND, [("aqua_pump", 27)])
         self.assertEqual(self.aqua.pinmap(), {"aqua_pump": 27})
         self.assertEqual(self.aqua.status()["runtime"]["pump_pin"], 27)
@@ -329,7 +330,7 @@ class TestAquaSkeleton(unittest.TestCase):
         data = self.aqua.status()
 
         self.assertIn("Pump init failed: pin busy", message)
-        self.assertIn(("aqua/ui", "GET"), sys.modules["Common"].ENDPOINTS)
+        self.assertIn(("aqua", "GET"), sys.modules["Common"].ENDPOINTS)
         self.assertIn(("aqua/settings", "POST"), sys.modules["Common"].ENDPOINTS)
         self.assertFalse(data["runtime"]["pump_hw"])
         self.assertEqual(data["runtime"]["pump_pin"], 28)
@@ -506,12 +507,12 @@ class TestAquaSkeleton(unittest.TestCase):
         endpoints = sys.modules["Common"].ENDPOINTS
 
         self.assertEqual(set(endpoints), {
-            ("aqua/ui", "GET"),
+            ("aqua", "GET"),
             ("aqua/settings", "GET"),
             ("aqua/settings", "POST"),
         })
-        self.assertEqual(endpoints[("aqua/ui", "GET")], "irrigation_system/aqua.html")
-        self.assertNotIn(("aqua", "GET"), endpoints)
+        self.assertEqual(endpoints[("aqua", "GET")], "irrigation_system/aqua.html")
+        self.assertNotIn(("aqua/ui", "GET"), endpoints)
         self.assertNotIn(("irrigation", "GET"), endpoints)
         self.assertNotIn(("aqua/api", "GET"), endpoints)
         self.assertNotIn(("aqua/api", "POST"), endpoints)

@@ -1,13 +1,9 @@
 {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "urls": [
         [
             "LM_OV2640.py",
             "github:BxNxM/micrOSPackages/camera/package/LM_OV2640.py"
-        ],
-        [
-            "camera/__init__.py",
-            "github:BxNxM/micrOSPackages/camera/package/__init__.py"
         ],
         [
             "camera/pacman.json",

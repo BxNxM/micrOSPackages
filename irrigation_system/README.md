@@ -46,7 +46,7 @@ aqua stop
 Open the dashboard after `aqua load`:
 
 ```text
-http://<device>/aqua/ui
+http://<device>/aqua
 ```
 
 ## Skeleton API
