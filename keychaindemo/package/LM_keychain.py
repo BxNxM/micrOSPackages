@@ -6,6 +6,7 @@ from microIO import bind_pin, pinmap_search
 from LM_oled import text, show, rect, pixel, clean, line, load as oled_lni
 from LM_ds18 import measure
 from LM_system import top, ifconfig
+from Types import resolve
 try:
     from LM_gameOfLife import next_gen as gol_nextgen, reset as gol_reset
 except:
@@ -310,13 +311,13 @@ def help(widgets=False):
         (widgets=False) list of functions implemented by this application
         (widgets=True) list of widget json for UI generation
     """
-    return ('load width=64 height=32 bootmsg="micrOS"',
-            'msgbox msg="micrOS"',
-            'temperature',
-            'display period>=1000 tts=30',
-            'button',
-            'display_toggle',
-            'neopixel_toggle',
-            'color_wheel br=<0-100>',
-            'pinmap')
+    return resolve(('load width=64 height=32 bootmsg="micrOS"',
+                    'msgbox msg="micrOS"',
+                    'temperature',
+                    'display period>=1000 tts=30',
+                    'button',
+                    'BUTTON display_toggle',
+                    'BUTTON neopixel_toggle',
+                    'color_wheel br=<0-100>',
+                    'pinmap'), widgets=widgets)
 
