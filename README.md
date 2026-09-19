@@ -45,6 +45,8 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 | --- | --- | --- | --- |
 | <img src="./async_mqtt/media/mqtt_client.png" alt="mqtt_client illustration" width="96"> | [async_mqtt](./async_mqtt/README.md) | `mqtt_client` | Async MQTT client with micrOS Notifications integration. |
 | <img src="./sim800/media/sim800.png" alt="sim800 illustration" width="72"> | [sim800](./sim800/README.md) | `sim800`<br>`sim800_http`<br>`sim800mqtt` | SIM800C GSM/GPRS integration with voice, SMS, USSD, HTTP, and MQTT support. |
+| <img src="./uwebrepl/media/uwebrepl.png" alt="presence illustration" width="96"> | [uwebrepl](./uwebrepl/README.md) | `uwebrepl` | Device-hosted WebREPL status, activation and MicroPython terminal. |
+
 
 ## 🧩 Applications & Utilities
 
@@ -58,7 +60,6 @@ In addition to `package.json`, micrOS packages also include a **pacman.json** fi
 | - | [qr_code](./qr_code/README.md) | - | Standalone QR Code generator for CPython and MicroPython. |
 | <img src="./roboarm/media/roboarm.png" alt="roboarm illustration" width="96"> | [roboarm](./roboarm/README.md) | `roboarm` | Minimal 2 servo robot arm, xy control with record & replay |
 | <img src="./presence/media/ld2410.png" alt="presence illustration" width="96"> | [presence](./presence/README.md) | `ld2410` | Human presence rader sensor (beta) |
-
 
 
 

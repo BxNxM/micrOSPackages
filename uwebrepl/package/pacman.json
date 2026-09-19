@@ -1,0 +1,20 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.1.0"
+    },
+    "url": "github:BxNxM/micrOSPackages/uwebrepl",
+    "layout": {
+        "/modules": [
+            "LM_uwebrepl.py"
+        ],
+        "/data": [],
+        "/web": [
+            "uwebrepl/console.css",
+            "uwebrepl/console.js",
+            "uwebrepl/index.html",
+            "uwebrepl/term.js"
+        ]
+    },
+    "deps": []
+}

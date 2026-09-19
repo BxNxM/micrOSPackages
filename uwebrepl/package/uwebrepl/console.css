@@ -1,0 +1,33 @@
+:root { color-scheme: dark; font: 15px/1.5 system-ui, sans-serif; background: #10191c; color: #e6eeef; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1120px; margin: auto; padding: 28px 20px; }
+a { color: #73ded0; }
+header a { text-decoration: none; font-weight: 700; letter-spacing: .1em; }
+h1 { margin: 8px 0 0; font-size: 32px; letter-spacing: -.04em; }
+h1 span { color: #9baeb3; font-weight: 400; }
+header p, .hint, footer { color: #9baeb3; }
+.panel, details { border: 1px solid #34474d; border-radius: 10px; padding: 16px; margin: 20px 0; }
+.toolbar, .console-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.toolbar + .toolbar { margin-top: 14px; }
+button { background: #23363d; color: #ecf5f5; border: 1px solid #52666d; border-radius: 6px; padding: 8px 12px; font: inherit; cursor: pointer; }
+button:hover:enabled { border-color: #73ded0; }
+button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid #73ded0; outline-offset: 3px; }
+button:disabled { opacity: .45; cursor: default; }
+#enable:enabled, #connect:enabled { background: #15574d; border-color: #429c8c; }
+#backend { margin-right: auto; font-weight: 600; }
+#backend[data-state="active"] { color: #73ded0; }
+#backend[data-state="inactive"] { color: #f4cb83; }
+#backend[data-state="unknown"] { color: #b4c0c3; }
+#address { margin-right: auto; overflow-wrap: anywhere; }
+#message { margin: 14px 0 0; color: #bacbd0; }
+.console { border: 1px solid #34474d; border-radius: 10px; overflow: hidden; background: #000; }
+.console-bar { justify-content: space-between; padding: 10px 14px; background: #1a2a30; color: #a9bbc1; }
+.console-bar button { font-size: 12px; padding: 5px 8px; }
+#terminal { padding: 12px; overflow: auto; min-height: 320px; }
+.terminal { font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; line-height: 1.25; outline: none; }
+.terminal-cursor { color: #000; background: #fff; }
+details p { max-width: 90ch; }
+summary { cursor: pointer; }
+footer { font-size: 12px; }
+@media (max-width: 600px) { main { padding: 16px 10px; } .panel { padding: 12px; } #backend { width: 100%; } }

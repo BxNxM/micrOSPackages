@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>micrOS · WebREPL</title>
+  <link rel="stylesheet" href="/uwebrepl/console.css">
+  <script defer src="/auth.js"></script>
+  <script defer src="/uwebrepl/term.js"></script>
+  <script defer src="/uwebrepl/console.js"></script>
+</head>
+<body>
+<main>
+  <header><a href="/">micrOS</a><h1>WebREPL <span>console</span></h1>
+    <p>MicroPython, directly on your device.</p></header>
+  <section class="panel" aria-label="WebREPL controls">
+    <div class="toolbar">
+      <span id="backend" role="status" data-state="unknown">Backend: checking…</span>
+      <button id="refresh" type="button">Refresh status</button>
+      <button id="enable" type="button" disabled>Enable WebREPL</button>
+    </div>
+    <div class="toolbar">
+      <code id="address"></code>
+      <button id="connect" type="button" disabled>Connect</button>
+      <span id="connection" role="status">Console: disconnected</span>
+    </div>
+    <p id="message" role="status">Checking the device…</p>
+  </section>
+  <section class="console" aria-label="MicroPython terminal">
+    <div class="console-bar"><span>MicroPython terminal</span>
+      <div><button id="interrupt" type="button" disabled>Ctrl+C · Interrupt micrOS</button>
+      <button id="restart" type="button" disabled>Ctrl+D · Restart</button></div></div>
+    <div id="terminal" aria-label="Interactive terminal"></div>
+  </section>
+  <p class="hint">After connecting, click the terminal and enter your WebREPL password
+    (normally the device's <code>appwd</code>). No password is saved by this console.</p>
+  <details><summary>Using the Python prompt</summary>
+    <p>Press Ctrl+C to reach the Python prompt (<code>&gt;&gt;&gt;</code>). This stops
+      micrOS, including its web server and automation. Keep this page open to use the console.</p>
+    <p>To restart micrOS, type <code>import helpers</code> and press Enter, then type
+      <code>0</code> and Enter to reboot. Reconnect after startup. Choose <code>1</code>
+      instead to open the micrOS shell on the device.</p>
+    <p>Paste: Ctrl+A, then Ctrl+V (Cmd+V on macOS). Only one WebREPL client can
+      connect at a time. Disconnecting leaves WebREPL enabled until reboot.</p>
+  </details>
+  <footer>Terminal from the <a href="https://github.com/micropython/webrepl">MicroPython WebREPL client</a> · Served by this device</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+    "version": "0.1.0",
+    "urls": [
+        [
+            "LM_uwebrepl.py",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/LM_uwebrepl.py"
+        ],
+        [
+            "uwebrepl/pacman.json",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/pacman.json"
+        ],
+        [
+            "uwebrepl/uwebrepl/console.css",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/uwebrepl/console.css"
+        ],
+        [
+            "uwebrepl/uwebrepl/console.js",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/uwebrepl/console.js"
+        ],
+        [
+            "uwebrepl/uwebrepl/index.html",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/uwebrepl/index.html"
+        ],
+        [
+            "uwebrepl/uwebrepl/term.js",
+            "github:BxNxM/micrOSPackages/uwebrepl/package/uwebrepl/term.js"
+        ]
+    ],
+    "deps": []
+}
