@@ -4,7 +4,7 @@ import argparse
 import sys
 import subprocess
 from pathlib import Path
-from _tools import validate, serve_packages, create_package, unpack, ut_executor, pacman_inspect
+from _tools import validate, serve_packages, create_package, unpack, ut_executor, pacman_inspect, registry
 
 
 def check_githooks():
@@ -51,10 +51,10 @@ def build_parser():
     parser.add_argument("--package", help="[Package] Name of the package/application")
     parser.add_argument("--module", help="[LM] Public command name")
 
-    # UPDATE: package.json urls
+    # UPDATE: package metadata and registry
     parser.add_argument(
         "-u", "--update",
-        help="✅ Update application package.json and pacman.json by package name, or run for all with ALL param."
+        help="✅ Update package.json and pacman.json by package name (or ALL), then refresh registry.json."
     )
 
     parser.add_argument(
@@ -120,6 +120,8 @@ if __name__ == "__main__":
             package_name = args.update
             package_path = create_package.REPO_ROOT / package_name / "package"
             create_package.update_package(package_path, package_name)
+
+        registry.update_registry(create_package.REPO_ROOT)
 
     # --- INSPECT LOGIC ---
     if args.inspect is not None:

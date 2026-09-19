@@ -1,0 +1,122 @@
+[
+    {
+        "version": "1.0.0",
+        "ref": "github:BxNxM/micrOSPackages/alarm_system",
+        "description": "Manages distributed alarm zones with local sensors, MQTT events, SMS control, and event logging."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/async_mqtt",
+        "description": "Runs micrOS commands received over MQTT and publishes JSON responses through an asynchronous client."
+    },
+    {
+        "version": "1.0.1",
+        "ref": "github:BxNxM/micrOSPackages/async_oledui",
+        "description": "Provides an asynchronous OLED interface with pages, popups, and trackball navigation for SSD1306 and SH1106 displays."
+    },
+    {
+        "version": "0.1.0",
+        "ref": "github:BxNxM/micrOSPackages/blinky_example",
+        "description": "Demonstrates controlling a single LED from the micrOS shell or web interface."
+    },
+    {
+        "version": "1.0.2",
+        "ref": "github:BxNxM/micrOSPackages/camera",
+        "description": "Controls an OV2640 camera with photo capture, image settings, and web snapshot and streaming endpoints."
+    },
+    {
+        "version": "1.0.0",
+        "ref": "github:BxNxM/micrOSPackages/co2",
+        "description": "Supports MH-Z19 CO2 measurements and calibrated MQ-135 air-quality estimates."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/color_sensor",
+        "description": "Reads RGB and ambient light from a TCS3472 sensor with optional NeoPixel color visualization."
+    },
+    {
+        "version": "0.1.0",
+        "ref": "github:BxNxM/micrOSPackages/dc_motor",
+        "description": "Controls DC motor speed and direction through L298N and L9110 drivers."
+    },
+    {
+        "version": "1.0.1",
+        "ref": "github:BxNxM/micrOSPackages/garage_remote",
+        "description": "Controls a garage door and alarm through an RF remote using authorized phone calls and SMS commands."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/gyro",
+        "description": "Reads acceleration, angular velocity, and temperature from QMI8658 and QMI8658C motion sensors."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/haptic",
+        "description": "Drives a vibration motor with PWM tap and effect helpers for haptic feedback."
+    },
+    {
+        "version": "0.0.5",
+        "ref": "github:BxNxM/micrOSPackages/irrigation_system",
+        "description": "Provides a beta garden irrigation dashboard with tank monitoring, water-volume calculations, and watering plans."
+    },
+    {
+        "version": "1.0.0",
+        "ref": "github:BxNxM/micrOSPackages/keychaindemo",
+        "description": "Demonstrates an ESP32-C3 keychain with OLED status, temperature readings, a screen saver, and NeoPixel control."
+    },
+    {
+        "version": "0.1.1",
+        "ref": "github:BxNxM/micrOSPackages/neopixel_matrix",
+        "description": "Controls NeoPixel matrices with animations, frame playback, brightness adjustment, and a web drawing interface."
+    },
+    {
+        "version": "1.0.1",
+        "ref": "github:BxNxM/micrOSPackages/phone_manager",
+        "description": "Manages persistent phonebooks with user roles and time-limited access permissions."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/presence",
+        "description": "Provides a beta LD2410 presence sensor interface with readings and firmware queries over a serial connection."
+    },
+    {
+        "version": "0.0.1",
+        "ref": "github:BxNxM/micrOSPackages/qr_code",
+        "description": "Generates QR codes for CPython and MicroPython using built-in language features."
+    },
+    {
+        "version": "1.0.0",
+        "ref": "github:BxNxM/micrOSPackages/roboarm",
+        "description": "Controls a two-servo robotic arm with smooth movement, position recording, and playback."
+    },
+    {
+        "version": "2.0.1",
+        "ref": "github:BxNxM/micrOSPackages/sim800",
+        "description": "Connects SIM800 GSM modems for calls, SMS, USSD, notifications, and HTTP or MQTT over GPRS."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/sound_event",
+        "description": "Learns and classifies sound events captured by an I2S microphone using stored labeled examples."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/tof_distance",
+        "description": "Measures distance in millimeters with a VL53L0X time-of-flight sensor over I2C."
+    },
+    {
+        "version": "0.0.2",
+        "ref": "github:BxNxM/micrOSPackages/trackball",
+        "description": "Reads movement and button presses from a Pimoroni trackball with configurable sensitivity."
+    },
+    {
+        "version": "0.1.0",
+        "ref": "github:BxNxM/micrOSPackages/ultrasonic_distance",
+        "description": "Measures distance in centimeters or millimeters using HC-SR04 and RCWL-1670 ultrasonic sensors."
+    },
+    {
+        "version": "0.1.0",
+        "ref": "github:BxNxM/micrOSPackages/uwebrepl",
+        "description": "Provides a device-hosted browser console for enabling and accessing the MicroPython WebREPL."
+    }
+]

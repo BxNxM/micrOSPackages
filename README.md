@@ -116,10 +116,11 @@ python3 tools.py [options]
 - `--module MODULE`  
   Public Load Module name (LM_*.py) when creating a new application.
 
-### Update package.json
+### Update package metadata and registry
 - `-u UPDATE`, `--update UPDATE`  
   Update the `package.json` file of a package by its `PACKAGE` name.  
-  Primarily updates the "urls" section.
+  Updates the "urls" section and `pacman.json`, then refreshes `registry.json`.
+  Use `ALL` to update every package.
 
 ---
 
@@ -235,6 +236,36 @@ python3 tools.py --update mypackage
 > `package.json` (`urls`) generation for all `/package` files
 
 > `pacman.json` metadata generation from `package.json`
+
+Both `--update mypackage` and `--update ALL` also regenerate the root
+`registry.json` from all top-level folders containing `package.json`, sorted
+by package name:
+
+```json
+[
+    {
+        "version": "0.1.0",
+        "ref": "github:BxNxM/micrOSPackages/blinky_example",
+        "description": ""
+    }
+]
+```
+
+Versions come from `package.json`
+(defaulting to `0.0.0` when omitted). The generated `ref` is the GitHub
+download shorthand used by `mip` and `pacman install`. Its repository is
+detected from the current branch's upstream remote, then `origin`, using
+GitHub HTTPS or SSH URLs (including `git@github.com:owner/repo.git`). If neither
+provides a GitHub repository, or Git is unavailable, it defaults to
+`github:BxNxM/micrOSPackages`. Detection uses the package repository itself,
+not its parent checkout, and also works with detached HEAD via `origin`.
+Edit descriptions directly in
+`registry.json`; updates preserve them by the package name at the end of `ref`,
+even when the repository remote changes. Older entries with a `name` field are
+accepted and regenerated without it. Newly discovered
+packages start with an empty description, and removed packages disappear from
+the registry. An unreadable or invalid existing registry causes generation to
+fail without overwriting it.
 
 ---
 
