@@ -65,6 +65,11 @@
         "description": "Demonstrates an ESP32-C3 keychain with OLED status, temperature readings, a screen saver, and NeoPixel control."
     },
     {
+        "version": "1.0.0",
+        "ref": "github:BxNxM/micrOSPackages/light_sensors",
+        "description": "Measures ambient light intensity and illuminance with TEMPT6000 and VEML7700."
+    },
+    {
         "version": "0.1.1",
         "ref": "github:BxNxM/micrOSPackages/neopixel_matrix",
         "description": "Controls NeoPixel matrices with animations, frame playback, brightness adjustment, and a web drawing interface."

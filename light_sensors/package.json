@@ -1,0 +1,26 @@
+{
+    "version": "1.0.0",
+    "urls": [
+        [
+            "LM_light_sensor.py",
+            "github:BxNxM/micrOSPackages/light_sensors/package/LM_light_sensor.py"
+        ],
+        [
+            "LM_tempt6000.py",
+            "github:BxNxM/micrOSPackages/light_sensors/package/LM_tempt6000.py"
+        ],
+        [
+            "LM_veml7700.py",
+            "github:BxNxM/micrOSPackages/light_sensors/package/LM_veml7700.py"
+        ],
+        [
+            "light_sensors/__init__.py",
+            "github:BxNxM/micrOSPackages/light_sensors/package/__init__.py"
+        ],
+        [
+            "light_sensors/pacman.json",
+            "github:BxNxM/micrOSPackages/light_sensors/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}
