@@ -115,7 +115,7 @@
         "description": "Reads movement and button presses from a Pimoroni trackball with configurable sensitivity."
     },
     {
-        "version": "0.1.0",
+        "version": "0.2.0",
         "ref": "github:BxNxM/micrOSPackages/ultrasonic_distance",
         "description": "Measures distance in centimeters or millimeters using HC-SR04 and RCWL-1670 ultrasonic sensors."
     },

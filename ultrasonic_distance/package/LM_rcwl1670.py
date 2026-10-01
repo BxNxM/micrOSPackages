@@ -32,7 +32,7 @@ def _sensor(trig_pin=32, echo_pin=35, timeout_us=40000, trigger_us=10, reset=Fal
     return SENSOR
 
 
-def load(trig_pin=32, echo_pin=35, timeout_us=40000, trigger_us=10, reset=False):
+def load(trig_pin=9, echo_pin=10, timeout_us=40000, trigger_us=10, reset=False):
     """
     Create and cache the RCWL-1670 trigger/echo sensor.
 
