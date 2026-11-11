@@ -20,6 +20,11 @@
         "description": "Demonstrates controlling a single LED from the micrOS shell or web interface."
     },
     {
+        "version": "0.0.9",
+        "ref": "github:BxNxM/micrOSPackages/bluetooth",
+        "description": ""
+    },
+    {
         "version": "1.0.2",
         "ref": "github:BxNxM/micrOSPackages/camera",
         "description": "Controls an OV2640 camera with photo capture, image settings, and web snapshot and streaming endpoints."

@@ -1,0 +1,18 @@
+{
+    "version": "0.0.9",
+    "urls": [
+        [
+            "bluetooth/Bluetooth.py",
+            "github:BxNxM/micrOSPackages/bluetooth/package/Bluetooth.py"
+        ],
+        [
+            "LM_bluetooth.py",
+            "github:BxNxM/micrOSPackages/bluetooth/package/LM_bluetooth.py"
+        ],
+        [
+            "bluetooth/pacman.json",
+            "github:BxNxM/micrOSPackages/bluetooth/package/pacman.json"
+        ]
+    ],
+    "deps": []
+}

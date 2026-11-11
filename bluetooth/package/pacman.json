@@ -1,0 +1,15 @@
+{
+    "versions": {
+        "packager": "0.2.0",
+        "package": "0.0.9"
+    },
+    "url": "github:BxNxM/micrOSPackages/bluetooth",
+    "layout": {
+        "/modules": [
+            "LM_bluetooth.py"
+        ],
+        "/data": [],
+        "/web": []
+    },
+    "deps": []
+}
